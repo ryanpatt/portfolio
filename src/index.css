@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #090c15;
+    color: #e8edf5;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0f1524;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e2d42;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #c9a84c;
+  }
+}
+
+@layer components {
+  .section-number {
+    @apply absolute -top-8 left-0 text-8xl font-display font-extrabold text-white/[0.03] select-none pointer-events-none leading-none;
+  }
+
+  .section-title {
+    @apply font-display text-3xl font-semibold text-ink mb-1;
+  }
+
+  .section-divider {
+    @apply w-12 h-0.5 bg-gold mb-8 rounded-full;
+  }
+
+  .card {
+    @apply bg-card border border-border-subtle rounded-xl p-6 transition-all duration-300;
+  }
+
+  .card:hover {
+    @apply border-gold/30 bg-card-hover shadow-lg shadow-gold/5;
+  }
+
+  .tag {
+    @apply inline-block text-xs font-medium px-2.5 py-1 rounded-full border;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
+/* Reveal on scroll */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Nav transition */
+.nav-slide {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hero gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #e8edf5 30%, #c9a84c 70%, #e4c76b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle hero background */
+.hero-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 168, 76, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(74, 144, 226, 0.05) 0%, transparent 60%),
+    #090c15;
+}
+
+/* Integration icon backgrounds */
+.icon-bg-bestbuy { background: rgba(15, 90, 160, 0.15); }
+.icon-bg-magento { background: rgba(238, 110, 61, 0.15); }
+.icon-bg-netsuite { background: rgba(52, 152, 219, 0.15); }
+.icon-bg-sap { background: rgba(0, 118, 203, 0.15); }
+.icon-bg-salesforce { background: rgba(0, 161, 224, 0.15); }
