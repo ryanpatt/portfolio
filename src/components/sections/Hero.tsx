@@ -1,5 +1,6 @@
 import { stats } from '../../data/content'
 import PrintButton from '../PrintButton'
+import PongGame from '../PongGame'
 
 interface HeroProps {
   onScrollTo: (id: string) => void
@@ -19,6 +20,8 @@ export default function Hero({ onScrollTo }: HeroProps) {
           backgroundSize: '64px 64px',
         }}
       />
+
+      <PongGame />
 
       <div className="relative z-10 max-w-3xl">
         <div className="flex items-center gap-3 mb-8 animate-fade-in">
