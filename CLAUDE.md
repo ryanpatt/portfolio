@@ -17,8 +17,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # local dev server
 npm run build    # TypeScript check + Vite build → dist/
 npm run preview  # preview production build locally
-vercel --prod    # deploy to production
 ```
+
+## Deploy workflow
+
+**Never use `vercel --prod` directly for routine deploys.** The Vercel project (`ryans-apps/ryanpatt`) is connected to GitHub `ryanpatt/portfolio` — pushes to `main` auto-deploy.
+
+The cycle is:
+
+1. Edit locally
+2. `npm run build` to confirm typecheck + bundle pass
+3. `git add <specific files>` (avoid `-A` / `.`)
+4. `git commit -m "..."`
+5. `git push origin main`
+6. Vercel picks up the push and deploys automatically
+
+Only use `vercel --prod` if explicitly asked or for one-off out-of-band deploys.
 
 ## Architecture
 

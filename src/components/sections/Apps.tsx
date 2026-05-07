@@ -55,7 +55,7 @@ export default function Apps() {
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-5">
                   {app.tech.map((t) => (
                     <span
                       key={t}
@@ -65,6 +65,20 @@ export default function Apps() {
                     </span>
                   ))}
                 </div>
+
+                {app.appStoreUrl && (
+                  <a
+                    href={app.appStoreUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gold hover:text-gold-light transition-colors"
+                  >
+                    View on the App Store
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M7 17L17 7M17 7H7M17 7V17" />
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
           ))}

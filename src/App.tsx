@@ -8,12 +8,17 @@ import Integrations from './components/sections/Integrations'
 import Projects from './components/sections/Projects'
 import Apps from './components/sections/Apps'
 import Contact from './components/sections/Contact'
+import PrintButton from './components/PrintButton'
+import Resume from './components/Resume'
 import { navItems } from './data/content'
 import { useActiveSection } from './hooks/useActiveSection'
 
 export type NavPosition = 'left' | 'right'
 
 export default function App() {
+  const isResume =
+    typeof window !== 'undefined' && window.location.hash === '#resume'
+
   const [navPosition, setNavPosition] = useState<NavPosition>(() => {
     return (localStorage.getItem('navPosition') as NavPosition) || 'left'
   })
@@ -51,6 +56,10 @@ export default function App() {
 
   const toggleNavPosition = () =>
     setNavPosition((p) => (p === 'left' ? 'right' : 'left'))
+
+  if (isResume) {
+    return <Resume />
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
@@ -139,6 +148,8 @@ export default function App() {
           onMobileClose={() => setMobileMenuOpen(false)}
         />
       )}
+
+      <PrintButton />
     </div>
   )
 }

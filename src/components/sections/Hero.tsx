@@ -1,4 +1,5 @@
 import { stats } from '../../data/content'
+import PrintButton from '../PrintButton'
 
 interface HeroProps {
   onScrollTo: (id: string) => void
@@ -50,6 +51,7 @@ export default function Hero({ onScrollTo }: HeroProps) {
           >
             Get in Touch
           </button>
+          <PrintButton variant="inline" />
         </div>
 
         {/* Stats */}

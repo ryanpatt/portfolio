@@ -119,3 +119,426 @@
 .icon-bg-netsuite { background: rgba(52, 152, 219, 0.15); }
 .icon-bg-sap { background: rgba(0, 118, 203, 0.15); }
 .icon-bg-salesforce { background: rgba(0, 161, 224, 0.15); }
+
+/* Resume page (#resume) — clean single-column document */
+.resume {
+  max-width: 7.5in;
+  margin: 0 auto;
+  padding: 0.5in 0.6in;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10pt;
+  line-height: 1.4;
+}
+
+.resume a {
+  color: #0a4d8c;
+  text-decoration: none;
+}
+
+.resume .resume-header {
+  border-bottom: 2px solid #1a1a1a;
+  padding-bottom: 0.12in;
+  margin-bottom: 0.18in;
+}
+
+.resume .resume-header h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 24pt;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+}
+
+.resume .resume-tagline {
+  font-size: 11pt;
+  color: #555;
+  margin: 2pt 0 6pt 0;
+  font-weight: 500;
+}
+
+.resume .resume-contact {
+  font-size: 9pt;
+  color: #444;
+  margin: 0;
+}
+
+.resume section {
+  margin-bottom: 0.18in;
+  page-break-inside: avoid;
+}
+
+.resume h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1a1a1a;
+  margin: 0 0 6pt 0;
+  padding-bottom: 2pt;
+  border-bottom: 1px solid #999;
+}
+
+.resume p {
+  margin: 0 0 4pt 0;
+}
+
+.resume ul {
+  list-style: disc;
+  padding-left: 14pt;
+  margin: 4pt 0;
+}
+
+.resume li {
+  margin-bottom: 2pt;
+}
+
+.resume .resume-job {
+  margin-bottom: 8pt;
+  page-break-inside: avoid;
+}
+
+.resume .resume-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12pt;
+}
+
+.resume .resume-company {
+  color: #555;
+  font-weight: 500;
+}
+
+.resume .resume-meta {
+  font-size: 9pt;
+  color: #555;
+  white-space: nowrap;
+}
+
+.resume .resume-location {
+  font-size: 9pt;
+  color: #777;
+  font-style: italic;
+  margin-bottom: 2pt;
+}
+
+.resume .resume-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 2pt;
+}
+
+.resume .resume-skill-row {
+  font-size: 9.5pt;
+}
+
+.resume .resume-integrations,
+.resume .resume-projects {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.resume .resume-integrations li,
+.resume .resume-projects li {
+  margin-bottom: 4pt;
+  font-size: 9.5pt;
+  padding-left: 8pt;
+  position: relative;
+}
+
+.resume .resume-integrations li::before,
+.resume .resume-projects li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: #999;
+}
+
+.resume .resume-tech {
+  color: #666;
+  font-size: 9pt;
+  font-style: italic;
+}
+
+.resume .resume-bottom-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.3in;
+}
+
+.resume .resume-edu strong {
+  font-weight: 600;
+}
+
+@media screen {
+  body:has(.resume) {
+    background: #e5e7eb;
+  }
+  .resume {
+    margin: 0.3in auto;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+  }
+}
+
+@media print {
+  @page {
+    size: Letter;
+    margin: 0.4in 0.5in;
+  }
+
+  body:has(.resume) {
+    background: #ffffff !important;
+  }
+
+  .resume {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    font-size: 9.5pt;
+  }
+
+  .resume a {
+    color: #0a4d8c !important;
+  }
+}
+
+/* Legacy print fallback (printing main page) */
+@media print {
+  @page {
+    size: Letter;
+    margin: 0.4in 0.45in;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    font-size: 9.5pt !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  body * {
+    color: #1a1a1a !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: #d4d4d4 !important;
+  }
+
+  /* Hide all interactive / decorative chrome */
+  nav,
+  aside,
+  button,
+  .print\:hidden,
+  .section-number,
+  .animate-float,
+  .hero-bg > div:first-child,
+  #hero .grid,
+  #hero svg,
+  .section-divider,
+  .scroll-indicator,
+  /* Hide mobile header bar */
+  main > div.md\:hidden,
+  /* Hide decorative svg arrows in contact */
+  #contact a svg:last-child {
+    display: none !important;
+  }
+
+  /* Reveal everything */
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Collapse the app shell layout */
+  body > #root > div {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  main {
+    overflow: visible !important;
+    height: auto !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  /* Reset all section padding/sizing */
+  section {
+    padding: 0 !important;
+    margin: 0 0 0.18in 0 !important;
+    border: none !important;
+    min-height: 0 !important;
+    page-break-inside: auto;
+    max-width: 100% !important;
+  }
+
+  section > div {
+    max-width: 100% !important;
+  }
+
+  /* Hero becomes a tight header */
+  #hero {
+    min-height: 0 !important;
+    padding: 0 0 0.15in 0 !important;
+    margin-bottom: 0.15in !important;
+    border-bottom: 2px solid #1a1a1a !important;
+    background: none !important;
+  }
+
+  #hero .flex.items-center.gap-3 {
+    display: none !important;
+  }
+
+  #hero h1 {
+    font-size: 24pt !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  #hero p {
+    font-size: 10pt !important;
+    margin: 0.04in 0 0 0 !important;
+    color: #444 !important;
+    max-width: 100% !important;
+  }
+
+  /* Typography */
+  h1 { font-size: 24pt !important; font-weight: 700 !important; }
+  h2 {
+    font-size: 12pt !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    margin: 0 0 0.06in 0 !important;
+    border-bottom: 1px solid #999 !important;
+    padding-bottom: 0.03in !important;
+  }
+  h3 {
+    font-size: 10.5pt !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+  }
+  h4 { font-size: 10pt !important; font-weight: 600 !important; margin: 0 !important; }
+  p, li, div, span { font-size: 9.5pt !important; line-height: 1.35 !important; }
+
+  ul {
+    margin: 0.04in 0 !important;
+    padding: 0 !important;
+  }
+
+  li {
+    margin: 0.02in 0 !important;
+  }
+
+  /* Gradient text → solid */
+  .gradient-text {
+    -webkit-text-fill-color: #1a1a1a !important;
+    background: none !important;
+  }
+
+  /* Cards become flat compact blocks */
+  .card {
+    border: 1px solid #d4d4d4 !important;
+    padding: 0.08in 0.1in !important;
+    margin: 0 0 0.06in 0 !important;
+    border-radius: 3px !important;
+    page-break-inside: avoid;
+  }
+
+  /* Inline tags compactly */
+  .tag, [class*="rounded-full"], [class*="rounded"] {
+    border: 1px solid #ccc !important;
+    padding: 0.5pt 4pt !important;
+    font-size: 8pt !important;
+    margin-right: 2pt !important;
+  }
+
+  /* Skills/Integrations: tighter grids */
+  .grid { gap: 0.08in !important; }
+
+  /* Experience timeline: hide vertical line, tighten spacing */
+  #experience .absolute {
+    display: none !important;
+  }
+  #experience .pl-8 {
+    padding-left: 0 !important;
+  }
+  #experience .space-y-12 > * + * {
+    margin-top: 0.12in !important;
+  }
+  #experience .reveal {
+    page-break-inside: avoid;
+  }
+
+  /* Projects/Apps: compact two-column flow */
+  #projects .grid,
+  #apps .space-y-6 {
+    gap: 0.08in !important;
+  }
+
+  /* Contact section: compact */
+  #contact a {
+    border: none !important;
+    padding: 0 !important;
+    background: none !important;
+    display: inline !important;
+    margin-right: 0.15in !important;
+  }
+  #contact a > div:first-child {
+    display: none !important;
+  }
+  #contact a > div:nth-child(2) {
+    display: inline !important;
+  }
+  #contact a > div:nth-child(2) > div:first-child {
+    display: none !important;
+  }
+  #contact .space-y-4 > * + * {
+    margin-top: 0 !important;
+  }
+  #contact .space-y-4 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.1in !important;
+  }
+  #contact .mt-24 {
+    margin-top: 0.15in !important;
+    padding-top: 0.05in !important;
+    border-top: 1px solid #ccc !important;
+  }
+  #contact .mt-24 p {
+    font-size: 8pt !important;
+    color: #666 !important;
+  }
+
+  /* Hide the big expertise callout in Apps section */
+  #apps .mt-10 {
+    display: none !important;
+  }
+
+  /* Force expand any collapsed lists */
+  [hidden] {
+    display: revert !important;
+  }
+
+  /* External links: keep visible, no URL append (too noisy on resume) */
+  a[target="_blank"] {
+    color: #0066cc !important;
+    text-decoration: none !important;
+  }
+
+  /* Avoid orphan headings */
+  h2, h3 {
+    page-break-after: avoid;
+  }
+}
