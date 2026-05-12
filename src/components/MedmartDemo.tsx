@@ -552,11 +552,11 @@ export default function MedmartDemo() {
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { label: 'Platform', value: 'Magento 2.4.8 Commerce Cloud', icon: '🏗' },
-              { label: 'Repository', value: 'Med-mart/mmr-web-m2 — Private', icon: '🔒' },
+              { label: 'Platform', value: 'Magento 2.4.8 Commerce Cloud (Adobe Commerce Cloud Pro)', icon: '🏗' },
+              { label: 'Repository', value: 'Med-mart/mmr-web-m2 — Private · Single codebase, 3 storefronts', icon: '🔒' },
               { label: 'Custom Code', value: '48 modules · 80,581 lines PHP', icon: '💻' },
-              { label: 'Release Cadence', value: 'Weekly (release_YYYYMMDD branches)', icon: '🚀' },
-              { label: 'Infrastructure', value: 'Adobe Commerce Cloud · Fastly CDN · Redis · OpenSearch', icon: '☁️' },
+              { label: 'Storefronts', value: 'medmartonline.com (US) · canada.medmartonline.com · medmartsupply.com', icon: '🌐' },
+              { label: 'Infrastructure', value: 'Adobe Commerce Cloud Pro · Fastly CDN · Redis · OpenSearch', icon: '☁️' },
               { label: 'Integrations', value: 'Affirm · Amazon Pay · Worldpay · Katapult · Avalara · Klaviyo', icon: '🔗' },
             ].map((item) => (
               <div key={item.label} className="flex items-start gap-3 bg-surface rounded-xl p-4 border border-border-subtle">
@@ -607,8 +607,8 @@ export default function MedmartDemo() {
               {
                 label: 'Infrastructure',
                 score: 4,
-                concern: '4% Fastly cache hit rate, 484 staging crashes today, ESI blocks missing TTL, no CI/CD pipeline.',
-                action: 'Fix ESI TTL (resolves cache). Fix PDP layout conflict. Add GitHub Actions CI.',
+                concern: '4% Fastly cache hit rate, 484 staging crashes today, ESI TTL misconfiguration. One codebase serves 3 storefronts (US, Canada, Supply) — shared infrastructure risk.',
+                action: 'Fix ESI TTL (resolves cache). Fix PDP layout conflict. Add GitHub Actions CI. Validate per-store Fastly config.',
                 link: '#staging-logs',
               },
               {
