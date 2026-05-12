@@ -13,6 +13,7 @@ import PrintButton from './components/PrintButton'
 import Resume from './components/Resume'
 import MedmartDemo from './components/MedmartDemo'
 import AIPage from './components/AIPage'
+import ChatWidget from './components/ChatWidget'
 import { navItems } from './data/content'
 import { useActiveSection } from './hooks/useActiveSection'
 
@@ -164,11 +165,14 @@ function HashRedirect() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/ai" element={<AIPage />} />
-      <Route path="/medmart/demo" element={<MedmartDemo />} />
-      <Route path="/resume" element={<Resume />} />
-      <Route path="*" element={<HashRedirect />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/ai" element={<AIPage />} />
+        <Route path="/medmart/demo" element={<MedmartDemo />} />
+        <Route path="/resume" element={<Resume />} />
+        <Route path="*" element={<HashRedirect />} />
+      </Routes>
+      <ChatWidget />
+    </>
   )
 }
