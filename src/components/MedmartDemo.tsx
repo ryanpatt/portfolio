@@ -484,7 +484,7 @@ export default function MedmartDemo() {
   }, [])
 
   const sections = [
-    { id: 'summary', label: 'Summary' }, { id: 'staging-logs', label: 'Live Errors' },
+    { id: 'summary', label: 'Summary' }, { id: 'health', label: 'Health Scores' }, { id: 'staging-logs', label: 'Live Errors' },
     { id: 'security', label: 'Security' }, { id: 'js-audit', label: 'JS Audit' },
     { id: 'solid', label: 'Code Quality' }, { id: 'patches', label: 'Patches' },
     { id: 'tasks', label: 'Tasks' }, { id: 'team', label: 'Team' },
@@ -567,7 +567,120 @@ export default function MedmartDemo() {
           </div>
         </section>
 
-        {/* ── 2. Staging Log Errors ─── */}
+        {/* ── 2. Health Scores ─── */}
+        <section id="health">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3"><div className="h-px w-8 bg-gold" /><span className="text-gold text-xs font-medium tracking-widest uppercase">Platform Health</span></div>
+            <h2 className="font-display font-bold text-3xl text-ink mb-2">Health Score Overview</h2>
+            <p className="text-muted">Scored 0–10 across 8 dimensions. Each score is based on findings from this audit. Detailed evidence is in the sections below.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                label: 'Security',
+                score: 3,
+                concern: 'Credentials in repo, eval() XSS, compliance breach, unpatched production server.',
+                action: 'Rotate credentials. Fix eval(). Deploy APS B26-05. Resolve Worldpay compliance.',
+                link: '#security',
+              },
+              {
+                label: 'Code Quality',
+                score: 4,
+                concern: '961-line God class, ObjectManager anti-pattern, 23 console.logs in production, no ESLint enforcement.',
+                action: 'Remove debug logs. Fix innerHTML XSS. Plan refactor of top 3 oversized files.',
+                link: '#solid',
+              },
+              {
+                label: 'Project Integrity',
+                score: 3,
+                concern: '26 tasks not started, 4 critical bugs unresolved 48+ days, 3 tickets blocked 130+ days, 4 critical items unassigned.',
+                action: 'Assign owners to all critical tasks. Set SLAs for critical bug resolution (target: 72 hrs).',
+                link: '#tasks',
+              },
+              {
+                label: 'Dev Velocity',
+                score: 6,
+                concern: 'Good commit cadence (92/90 days) and weekly releases, but some tasks running 7–10× over senior dev estimates.',
+                action: 'Introduce time-boxing. Require escalation when a task exceeds 2× estimate.',
+                link: '#time-analysis',
+              },
+              {
+                label: 'Infrastructure',
+                score: 4,
+                concern: '4% Fastly cache hit rate, 484 staging crashes today, ESI blocks missing TTL, no CI/CD pipeline.',
+                action: 'Fix ESI TTL (resolves cache). Fix PDP layout conflict. Add GitHub Actions CI.',
+                link: '#staging-logs',
+              },
+              {
+                label: 'Testing & QA',
+                score: 2,
+                concern: 'No automated test suite found. No CI checks on pull requests. Staging bugs are reaching production.',
+                action: 'Add PHPUnit for custom modules. Add ESLint + build check to CI. Enforce staging UAT gate.',
+                link: '#recommendations',
+              },
+              {
+                label: 'Documentation',
+                score: 3,
+                concern: 'No .env.example, 13 @deprecated/@todo markers in production code, vague commit messages, no onboarding guide.',
+                action: 'Add .env.example. Enforce commit message standard (MM-XX prefix). Clean up deprecated markers.',
+                link: '#recommendations',
+              },
+              {
+                label: 'Dependency Health',
+                score: 5,
+                concern: 'minimum-stability: alpha allows pre-release packages in production. No automated composer audit in CI.',
+                action: 'Change stability to stable. Add composer audit to CI pipeline. Plan M2.4.9 upgrade assessment.',
+                link: '#patches',
+              },
+            ].map((item) => {
+              const pct = (item.score / 10) * 100
+              const color =
+                item.score <= 3 ? { ring: 'text-red-400', bg: 'bg-red-500', border: 'border-red-500/30', label: 'text-red-400', track: 'bg-red-500/20' } :
+                item.score <= 5 ? { ring: 'text-amber-400', bg: 'bg-amber-500', border: 'border-amber-500/30', label: 'text-amber-400', track: 'bg-amber-500/20' } :
+                item.score <= 7 ? { ring: 'text-yellow-400', bg: 'bg-yellow-500', border: 'border-yellow-500/30', label: 'text-yellow-400', track: 'bg-yellow-500/20' } :
+                                  { ring: 'text-emerald-400', bg: 'bg-emerald-500', border: 'border-emerald-500/30', label: 'text-emerald-400', track: 'bg-emerald-500/20' }
+              return (
+                <a key={item.label} href={item.link}
+                  className={`group block rounded-xl border bg-surface p-5 hover:bg-card transition-colors cursor-pointer ${color.border}`}>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <span className="text-ink font-semibold text-sm">{item.label}</span>
+                    <span className={`font-display font-extrabold text-2xl leading-none ${color.ring}`}>{item.score}<span className="text-muted text-sm font-normal">/10</span></span>
+                  </div>
+                  {/* Score bar */}
+                  <div className={`w-full h-1.5 rounded-full mb-3 ${color.track}`}>
+                    <div className={`h-full rounded-full ${color.bg}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="text-muted text-xs leading-relaxed mb-3">{item.concern}</p>
+                  <div className="pt-3 border-t border-border-subtle">
+                    <div className="text-[10px] text-muted uppercase tracking-wider font-medium mb-1">First action</div>
+                    <p className={`text-xs leading-relaxed ${color.label} group-hover:opacity-90`}>{item.action}</p>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+          {/* Overall score bar */}
+          <div className="mt-6 bg-surface border border-border-subtle rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-ink font-semibold">Overall Platform Health</div>
+                <div className="text-muted text-xs mt-0.5">Average across 8 dimensions · May 12, 2026</div>
+              </div>
+              <div className="text-right">
+                <span className="font-display font-extrabold text-4xl text-amber-400">3.8</span>
+                <span className="text-muted text-lg">/10</span>
+              </div>
+            </div>
+            <div className="w-full h-3 rounded-full bg-card overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-amber-400 transition-all" style={{ width: '38%' }} />
+            </div>
+            <p className="text-muted text-xs mt-3 leading-relaxed">
+              The platform scores below average across most dimensions. The two highest-risk areas are <span className="text-red-400 font-medium">Testing & QA (2/10)</span> and <span className="text-red-400 font-medium">Security (3/10)</span>. With targeted remediation of the immediate action items, this score could realistically reach <span className="text-emerald-400 font-medium">6–7/10</span> within 90 days.
+            </p>
+          </div>
+        </section>
+
+        {/* ── 3. Staging Log Errors ─── */}
         <section id="staging-logs">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-3"><div className="h-px w-8 bg-gold" /><span className="text-gold text-xs font-medium tracking-widest uppercase">Live Staging Errors</span></div>
