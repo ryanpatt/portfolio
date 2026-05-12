@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Nav from './components/Nav'
 import Hero from './components/sections/Hero'
 import About from './components/sections/About'
@@ -10,15 +11,13 @@ import Apps from './components/sections/Apps'
 import Contact from './components/sections/Contact'
 import PrintButton from './components/PrintButton'
 import Resume from './components/Resume'
+import MedmartDemo from './components/MedmartDemo'
 import { navItems } from './data/content'
 import { useActiveSection } from './hooks/useActiveSection'
 
 export type NavPosition = 'left' | 'right'
 
-export default function App() {
-  const isResume =
-    typeof window !== 'undefined' && window.location.hash === '#resume'
-
+function PortfolioLayout() {
   const [navPosition, setNavPosition] = useState<NavPosition>(() => {
     return (localStorage.getItem('navPosition') as NavPosition) || 'left'
   })
@@ -31,7 +30,6 @@ export default function App() {
     localStorage.setItem('navPosition', navPosition)
   }, [navPosition])
 
-  // Reveal on scroll
   useEffect(() => {
     const els = document.querySelectorAll<HTMLElement>('.reveal')
     const observer = new IntersectionObserver(
@@ -56,10 +54,6 @@ export default function App() {
 
   const toggleNavPosition = () =>
     setNavPosition((p) => (p === 'left' ? 'right' : 'left'))
-
-  if (isResume) {
-    return <Resume />
-  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
@@ -151,5 +145,28 @@ export default function App() {
 
       <PrintButton />
     </div>
+  )
+}
+
+function HashRedirect() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    if (location.hash === '#resume') {
+      navigate('/resume', { replace: true })
+    }
+  }, [location.hash, navigate])
+
+  return <PortfolioLayout />
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/medmart/demo" element={<MedmartDemo />} />
+      <Route path="/resume" element={<Resume />} />
+      <Route path="*" element={<HashRedirect />} />
+    </Routes>
   )
 }
