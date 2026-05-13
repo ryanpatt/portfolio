@@ -7,9 +7,9 @@ interface Message {
 }
 
 const SUGGESTED = [
+  "What's Ryan's greatest strength as an engineer?",
   "What's Ryan's most recent role?",
   'What AI or LLM work has Ryan done?',
-  'Tell me about ClockHQ',
   'Is Ryan available for hire?',
 ]
 
