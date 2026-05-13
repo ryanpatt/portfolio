@@ -139,14 +139,8 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="relative w-8 h-8 shrink-0">
-                <div className="absolute inset-0 rounded-full bg-gold/20 border border-gold/40" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-gold">
-                    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-                    <path d="M20 3v4M22 5h-4" />
-                  </svg>
-                </div>
+              <div className="w-9 h-9 shrink-0 rounded-full overflow-hidden border-2 border-gold/50 shadow-sm shadow-gold/20">
+                <img src="/video.gif" alt="Ryan" className="w-full h-full object-cover object-center" />
               </div>
               <div>
                 <div className="text-sm font-semibold text-ink leading-none">Ask about Ryan</div>
