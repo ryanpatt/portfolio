@@ -12,6 +12,7 @@ import Contact from './components/sections/Contact'
 import PrintButton from './components/PrintButton'
 import Resume from './components/Resume'
 import MedmartDemo from './components/MedmartDemo'
+import MedmartProposal from './components/MedmartProposal'
 import AIPage from './components/AIPage'
 import ChatWidget from './components/ChatWidget'
 import { navItems } from './data/content'
@@ -169,6 +170,7 @@ export default function App() {
       <Routes>
         <Route path="/ai" element={<AIPage />} />
         <Route path="/medmart/demo" element={<MedmartDemo />} />
+        <Route path="/medmart/proposal" element={<MedmartProposal />} />
         <Route path="/resume" element={<Resume />} />
         <Route path="*" element={<HashRedirect />} />
       </Routes>
