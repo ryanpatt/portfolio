@@ -18,18 +18,39 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showLabel, setShowLabel] = useState(false)
+  const [labelDone, setLabelDone] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Auto-show the "Ask AI" label after 2s, dismiss after 5s
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 150)
-    }
+    if (labelDone) return
+    const t1 = setTimeout(() => setShowLabel(true), 2000)
+    const t2 = setTimeout(() => {
+      setShowLabel(false)
+      setLabelDone(true)
+    }, 7000)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [labelDone])
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 150)
   }, [open])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const dismissLabel = () => {
+    setShowLabel(false)
+    setLabelDone(true)
+  }
+
+  const toggleOpen = () => {
+    dismissLabel()
+    setOpen((v) => !v)
+  }
 
   const send = async (text: string) => {
     const trimmed = text.trim()
@@ -41,8 +62,7 @@ export default function ChatWidget() {
     setInput('')
     setLoading(true)
 
-    const placeholder: Message = { role: 'assistant', content: '', streaming: true }
-    setMessages((prev) => [...prev, placeholder])
+    setMessages((prev) => [...prev, { role: 'assistant', content: '', streaming: true }])
 
     try {
       const res = await fetch('/api/chat', {
@@ -53,9 +73,7 @@ export default function ChatWidget() {
         }),
       })
 
-      if (!res.ok || !res.body) {
-        throw new Error(`HTTP ${res.status}`)
-      }
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
@@ -64,15 +82,11 @@ export default function ChatWidget() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
+        for (const line of chunk.split('\n')) {
           if (!line.startsWith('data: ')) continue
           const payload = line.slice(6)
           if (payload === '[DONE]') break
-
           try {
             const parsed = JSON.parse(payload) as { text?: string; error?: string }
             if (parsed.error) throw new Error(parsed.error)
@@ -80,17 +94,11 @@ export default function ChatWidget() {
               accumulated += parsed.text
               setMessages((prev) => {
                 const updated = [...prev]
-                updated[updated.length - 1] = {
-                  role: 'assistant',
-                  content: accumulated,
-                  streaming: true,
-                }
+                updated[updated.length - 1] = { role: 'assistant', content: accumulated, streaming: true }
                 return updated
               })
             }
-          } catch {
-            // skip malformed lines
-          }
+          } catch { /* skip malformed */ }
         }
       }
 
@@ -114,31 +122,38 @@ export default function ChatWidget() {
   }
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      send(input)
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) }
   }
 
   return (
     <>
-      {/* Chat panel */}
+      {/* Chat panel — sits above the trigger button */}
       {open && (
-        <div className="fixed bottom-20 right-4 md:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm flex flex-col bg-surface border border-border-subtle rounded-2xl shadow-2xl overflow-hidden"
-          style={{ height: 'min(520px, calc(100vh - 100px))' }}
+        <div
+          className="fixed bottom-[5.5rem] right-4 md:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/40"
+          style={{ height: 'min(520px, calc(100vh - 110px))', border: '1px solid rgba(201,168,76,0.2)', background: '#0f1524' }}
         >
+          {/* Gold top accent line */}
+          <div className="h-0.5 w-full shrink-0" style={{ background: 'linear-gradient(90deg, transparent, #c9a84c, transparent)' }} />
+
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center shrink-0">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gold">
-                  <path d="M12 2a10 10 0 1 0 10 10" />
-                  <path d="M12 6v6l4 2" />
-                </svg>
+              <div className="relative w-8 h-8 shrink-0">
+                <div className="absolute inset-0 rounded-full bg-gold/20 border border-gold/40" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-gold">
+                    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+                    <path d="M20 3v4M22 5h-4" />
+                  </svg>
+                </div>
               </div>
               <div>
                 <div className="text-sm font-semibold text-ink leading-none">Ask about Ryan</div>
-                <div className="text-xs text-muted mt-0.5">AI assistant · Powered by Claude</div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  <span className="text-xs text-muted">AI · Powered by Claude</span>
+                </div>
               </div>
             </div>
             <button
@@ -146,7 +161,7 @@ export default function ChatWidget() {
               className="text-muted hover:text-ink transition-colors p-1 -mr-1"
               aria-label="Close chat"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
@@ -156,7 +171,7 @@ export default function ChatWidget() {
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
             {messages.length === 0 && (
               <div>
-                <p className="text-xs text-muted mb-3">Ask anything about Ryan's background:</p>
+                <p className="text-xs text-muted mb-3">Try asking something:</p>
                 <div className="flex flex-col gap-2">
                   {SUGGESTED.map((q) => (
                     <button
@@ -180,7 +195,7 @@ export default function ChatWidget() {
                       : 'bg-card border border-border-subtle text-muted rounded-bl-sm'
                   }`}
                 >
-                  {msg.content || (msg.streaming ? '' : '')}
+                  {msg.content}
                   {msg.streaming && (
                     <span className="inline-block w-0.5 h-3.5 bg-gold ml-0.5 animate-pulse align-middle" />
                   )}
@@ -199,9 +214,9 @@ export default function ChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="Ask a question…"
+              placeholder="Ask anything about Ryan…"
               disabled={loading}
-              className="flex-1 bg-card border border-border-subtle rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-gold/40 transition-colors disabled:opacity-50"
+              className="flex-1 bg-card border border-border-subtle rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-gold/50 transition-colors disabled:opacity-50"
             />
             <button
               onClick={() => send(input)}
@@ -209,7 +224,7 @@ export default function ChatWidget() {
               className="shrink-0 w-8 h-8 rounded-xl bg-gold hover:bg-gold-light disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
               aria-label="Send"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-bg">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-bg">
                 <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
               </svg>
             </button>
@@ -217,26 +232,89 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Trigger button */}
+      {/* Floating label — animates in, auto-dismisses */}
+      {showLabel && !open && (
+        <div
+          className="fixed z-50 flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium text-ink shadow-lg shadow-black/30 cursor-pointer select-none"
+          style={{
+            bottom: '5.25rem',
+            right: '4.5rem',
+            background: 'linear-gradient(135deg, #1a2540, #141d30)',
+            border: '1px solid rgba(201,168,76,0.35)',
+            animation: 'fadeSlideIn 0.35s ease forwards',
+          }}
+          onClick={toggleOpen}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gold shrink-0">
+            <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+          </svg>
+          <span>Ask AI about Ryan</span>
+        </div>
+      )}
+
+      {/* Trigger button — positioned above the PDF print button */}
       <button
-        onClick={() => setOpen((v) => !v)}
-        className={`fixed bottom-4 right-4 md:right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 ${
-          open
-            ? 'bg-surface border border-border-subtle text-muted hover:text-ink'
-            : 'bg-gold hover:bg-gold-light text-bg'
-        }`}
+        onClick={toggleOpen}
         aria-label={open ? 'Close chat' : 'Chat with AI about Ryan'}
+        className="fixed z-50 flex items-center justify-center transition-all duration-200 print:hidden"
+        style={{
+          bottom: '4.75rem',
+          right: '1rem',
+          width: '3rem',
+          height: '3rem',
+          borderRadius: '9999px',
+          ...(open
+            ? {
+                background: '#0f1524',
+                border: '1px solid #1e2d42',
+                color: '#8d97aa',
+              }
+            : {
+                background: 'linear-gradient(135deg, #e4c76b, #c9a84c)',
+                border: '1px solid rgba(201,168,76,0.6)',
+                color: '#090c15',
+                boxShadow: '0 0 0 0 rgba(201,168,76,0.4), 0 4px 20px rgba(201,168,76,0.35)',
+              }),
+        }}
       >
+        {/* Pulse rings when closed */}
+        {!open && (
+          <>
+            <span
+              className="absolute inset-0 rounded-full"
+              style={{ animation: 'chatPulse 2s ease-out infinite', background: 'rgba(201,168,76,0.25)' }}
+            />
+            <span
+              className="absolute inset-0 rounded-full"
+              style={{ animation: 'chatPulse 2s ease-out 0.6s infinite', background: 'rgba(201,168,76,0.15)' }}
+            />
+          </>
+        )}
+
         {open ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+            <path d="M20 3v4M22 5h-4" />
           </svg>
         )}
       </button>
+
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes chatPulse {
+          0%   { transform: scale(1);   opacity: 0.7; }
+          70%  { transform: scale(1.9); opacity: 0;   }
+          100% { transform: scale(1.9); opacity: 0;   }
+        }
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateX(8px); }
+          to   { opacity: 1; transform: translateX(0);   }
+        }
+      `}</style>
     </>
   )
 }
