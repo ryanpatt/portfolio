@@ -262,32 +262,6 @@ export default function MedmartProposal() {
           </div>
         </section>
 
-        {/* ── Next Steps ── */}
-        <section className="border-t border-border-subtle pt-14">
-          <div className="max-w-2xl">
-            <h2 className="font-display text-xl font-semibold text-ink mb-4">Ready When You Are</h2>
-            <p className="text-muted leading-relaxed mb-6">
-              I'm open to either option and happy to discuss structure, start date, or any adjustments to scope. The goal is a clean, sustainable arrangement that gives MedMart consistent technical momentum without the overhead of a traditional agency engagement.
-            </p>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <a
-                href="mailto:r.patt9134@gmail.com"
-                className="px-5 py-2.5 bg-gold hover:bg-gold-light text-bg font-semibold rounded-xl transition-colors"
-              >
-                Get in Touch
-              </a>
-              <a
-                href="https://ryanpatt.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2.5 border border-gold/30 text-gold hover:bg-gold/10 rounded-xl transition-colors"
-              >
-                ryanpatt.com
-              </a>
-            </div>
-          </div>
-        </section>
-
         {/* Footer */}
         <footer className="pt-4 pb-8 border-t border-border-subtle flex items-center justify-between text-xs text-muted">
           <span>Ryan Patt · Confidential</span>
