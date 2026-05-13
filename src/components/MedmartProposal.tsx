@@ -242,26 +242,6 @@ export default function MedmartProposal() {
           </div>
         </section>
 
-        {/* ── Why It Works ── */}
-        <section>
-          <h2 className="font-display text-xl font-semibold text-ink mb-8">Why This Works</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-              { heading: 'Stable, Predictable Cost', body: 'One number on the P&L each month. No surprise invoices, no per-feature contracts, no agency markup on top of developer time.' },
-              { heading: 'Institutional Knowledge Stays In-House', body: 'Features, integrations, and architecture decisions are documented and owned internally — not locked inside an agency or a vendor relationship.' },
-              { heading: 'No Ramp-Up Cost', body: 'Already familiar with the codebase, the team, and the product. Day one is productive — not a discovery sprint at billable rate.' },
-              { heading: 'Faster Delivery', body: 'Direct ownership means no back-and-forth between stakeholder and vendor. Decisions get made and work gets done in the same loop.' },
-              { heading: 'Scales with the Business', body: 'As priorities shift — more AI, more integrations, new storefronts — the engagement adapts without re-scoping a contract.' },
-              { heading: 'Code Quality by Default', body: 'PR gates, normalized commits, and a clean pipeline protect the codebase long-term. Quality is built into the process, not audited after the fact.' },
-            ].map((c) => (
-              <div key={c.heading} className="bg-card border border-border-subtle rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-ink mb-2">{c.heading}</h3>
-                <p className="text-sm text-muted leading-relaxed">{c.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Footer */}
         <footer className="pt-4 pb-8 border-t border-border-subtle flex items-center justify-between text-xs text-muted">
           <span>Ryan Patt · Confidential</span>
