@@ -471,155 +471,316 @@ export default function MedmartAIDemo() {
           <div className="mb-10">
             <h2 className="font-display text-2xl font-bold text-ink mb-2">Commits & PRs Visible in Monday</h2>
             <p className="text-muted text-sm max-w-2xl">
-              A thin middleware layer listens to GitHub webhooks and keeps Monday.com cards
-              in sync with actual code — no one has to update two systems manually.
+              Include a ticket ID in the commit message and the rest happens automatically.
+              No context-switching. No manual status updates. Both systems stay in sync.
             </p>
           </div>
 
-          {/* Flow diagram — expanded visual */}
-          <div className="mb-10">
-            <p className="text-muted text-xs uppercase tracking-widest mb-5">How it flows</p>
-            <div className="grid md:grid-cols-4 gap-3">
-              {[
-                {
-                  icon: '💻',
-                  step: '01',
-                  label: 'Dev commits',
-                  detail: 'Commit message includes the ticket ID — e.g. "MM-74: fix checkout step"',
-                  color: 'border-border-subtle',
-                },
-                {
-                  icon: '🔗',
-                  step: '02',
-                  label: 'GitHub fires webhook',
-                  detail: 'GitHub sends the push/PR event to a secure endpoint — verified with a secret signature',
-                  color: 'border-border-subtle',
-                },
-                {
-                  icon: '⚙️',
-                  step: '03',
-                  label: 'Middleware processes it',
-                  detail: 'Parses the ticket ID, looks up the Monday card, and decides what to update based on the event type',
-                  color: 'border-border-subtle',
-                },
-                {
-                  icon: '✅',
-                  step: '04',
-                  label: 'Monday card updates',
-                  detail: 'Status changes, a commit note is posted on the card, and the team sees the activity instantly',
-                  color: 'border-gold/30',
-                },
-              ].map((s, i) => (
-                <div key={i} className="relative">
-                  <div className={`bg-card border ${s.color} rounded-xl p-5 h-full`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-2xl">{s.icon}</span>
-                      <span className="text-[10px] text-muted font-mono bg-surface px-1.5 py-0.5 rounded">{s.step}</span>
-                    </div>
-                    <p className="text-ink font-semibold text-sm mb-2">{s.label}</p>
-                    <p className="text-muted text-xs leading-relaxed">{s.detail}</p>
-                  </div>
-                  {i < 3 && (
-                    <div className="hidden md:flex absolute -right-2 top-1/2 -translate-y-1/2 z-10 w-4 h-4 items-center justify-center">
-                      <span className="text-gold text-lg">›</span>
-                    </div>
-                  )}
+          {/* ── Live example: push event → Monday card ── */}
+          <div className="mb-12">
+            <p className="text-muted text-xs uppercase tracking-widest mb-5">Example — push event</p>
+            <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+
+              {/* GitHub side */}
+              <div className="flex-1 bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden font-mono text-xs">
+                {/* repo header */}
+                <div className="px-4 py-2.5 border-b border-[#30363d] flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-[#e6edf3]">
+                    <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                  </svg>
+                  <span className="text-[#7d8590]">Med-mart /</span>
+                  <span className="text-[#e6edf3] font-semibold">mmr-web-m2</span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* What syncs */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-card border border-border-subtle rounded-xl p-5">
-              <h3 className="text-ink font-semibold text-sm mb-4">What syncs automatically</h3>
-              <div className="space-y-3">
-                {[
-                  { trigger: 'Commit pushed',      result: 'Commit note posted on Monday card', icon: '→' },
-                  { trigger: 'PR opened',           result: 'Card moves to "In Review"',         icon: '→' },
-                  { trigger: 'PR merged',           result: 'Card moves to "Done"',              icon: '→' },
-                  { trigger: 'Review requested',    result: '@mention on Monday card',           icon: '→' },
-                  { trigger: 'CI check fails',      result: 'Card flagged with warning',         icon: '→' },
-                ].map(row => (
-                  <div key={row.trigger} className="flex items-start gap-3 text-xs">
-                    <div className="bg-surface border border-border-subtle rounded px-2 py-1 text-muted w-32 flex-shrink-0">{row.trigger}</div>
-                    <span className="text-gold mt-1 flex-shrink-0">{row.icon}</span>
-                    <div className="text-muted pt-1">{row.result}</div>
+                {/* push event */}
+                <div className="px-4 py-3 border-b border-[#21262d]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-5 h-5 rounded-full bg-[#1a7f37] flex items-center justify-center flex-shrink-0">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                        <path d="M8.5 6.5L15 12l-6.5 5.5V6.5z"/>
+                      </svg>
+                    </div>
+                    <span className="text-[#7d8590]">max-a pushed</span>
+                    <span className="text-[#e6edf3]">3 commits</span>
+                    <span className="text-[#7d8590]">to</span>
+                    <span className="text-[#79c0ff] bg-[#1f2937] px-1.5 py-0.5 rounded-md">fix/mm-74-checkout</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-card border border-border-subtle rounded-xl p-5">
-              <h3 className="text-ink font-semibold text-sm mb-4">AI actions from inside Monday</h3>
-              <div className="space-y-3">
-                {[
-                  { action: 'Summarise git activity',       who: 'Pulls all linked commits and distills what changed' },
-                  { action: 'Draft PR description',          who: 'Generates a ready-to-paste PR body from commit history' },
-                  { action: 'Estimate effort',               who: 'Reads the ticket and returns a rough dev-hour estimate' },
-                  { action: 'Write release notes',           who: 'Produces customer-facing notes for all merged PRs this sprint' },
-                ].map(row => (
-                  <div key={row.action} className="text-xs">
-                    <p className="text-ink font-medium mb-0.5">"{row.action}"</p>
-                    <p className="text-muted leading-relaxed">{row.who}</p>
+                  <div className="space-y-1.5 pl-7">
+                    {[
+                      { sha: 'a3f9c12', msg: 'MM-74: fix multi-step checkout address validation' },
+                      { sha: 'd8e1047', msg: 'MM-74: add unit tests for address validator' },
+                      { sha: '2b5a883', msg: 'MM-74: remove legacy billing fallback' },
+                    ].map(c => (
+                      <div key={c.sha} className="flex items-start gap-2">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#7d8590] flex-shrink-0 mt-0.5">
+                          <circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="21"/>
+                        </svg>
+                        <span className="text-[#58a6ff] w-12 flex-shrink-0">{c.sha}</span>
+                        <span className="text-[#e6edf3]">{c.msg}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
+                </div>
 
-          {/* Security callout */}
-          <div className="bg-surface border border-border-subtle rounded-xl p-6 mb-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-900/30 border border-emerald-800/40 flex items-center justify-center flex-shrink-0">
-                <span className="text-xl">🔒</span>
+                {/* PR opened */}
+                <div className="px-4 py-3">
+                  <div className="flex items-start gap-2 mb-2">
+                    <div className="flex items-center gap-1 bg-[#1a7f37] text-white text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="6" y1="9" x2="6" y2="15"/>
+                        <path d="M21 9h-4a3 3 0 0 0-3 3v0a3 3 0 0 0 3 3h1"/><polyline points="18 6 21 9 18 12"/>
+                      </svg>
+                      Open
+                    </div>
+                    <div>
+                      <p className="text-[#e6edf3] font-semibold">MM-74: Hyva checkout — address validation fix <span className="text-[#7d8590] font-normal">#149</span></p>
+                      <p className="text-[#7d8590] text-[11px] mt-0.5">max-a wants to merge 3 commits into <span className="text-[#79c0ff]">staging</span> from <span className="text-[#79c0ff]">fix/mm-74-checkout</span></p>
+                    </div>
+                  </div>
+                  <div className="pl-8 flex gap-3 flex-wrap">
+                    <span className="flex items-center gap-1 text-[#3fb950] text-[10px]">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      3 checks passed
+                    </span>
+                    <span className="text-[#7d8590] text-[10px]">Review requested: ryan-p</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-ink font-semibold text-sm mb-3">Security — how it's kept safe</h3>
-                <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
-                  {[
-                    { label: 'Webhook signature verified', desc: 'Every GitHub event is signed with a shared secret. The middleware rejects anything that doesn\'t match before processing a single byte.' },
-                    { label: 'Tokens never leave the server', desc: 'Monday.com and Slack tokens are environment variables on Vercel — not in the code, not in git, not logged anywhere.' },
-                    { label: 'Read-only GitHub scope', desc: 'The webhook only receives push/PR events. The middleware has no write access to the repository.' },
-                    { label: 'No data stored', desc: 'The middleware is stateless — it receives, processes, and responds. Nothing is written to a database or disk.' },
-                  ].map(item => (
-                    <div key={item.label} className="flex gap-2 text-xs">
-                      <span className="text-emerald-400 flex-shrink-0 mt-0.5">✓</span>
+
+              {/* Arrow */}
+              <div className="flex lg:flex-col items-center justify-center gap-2 px-2">
+                <div className="hidden lg:block w-px flex-1 bg-gradient-to-b from-transparent via-gold/40 to-transparent" />
+                <div className="bg-gold/10 border border-gold/30 rounded-full p-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gold rotate-90 lg:rotate-0">
+                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </div>
+                <div className="hidden lg:block w-px flex-1 bg-gradient-to-b from-transparent via-gold/40 to-transparent" />
+                <span className="text-gold text-[10px] font-medium uppercase tracking-widest whitespace-nowrap">auto-synced</span>
+              </div>
+
+              {/* Monday card */}
+              <div className="flex-1 bg-[#1c1f3a] border border-[#3d3f6e] rounded-xl overflow-hidden text-xs">
+                {/* monday header */}
+                <div className="px-4 py-2.5 border-b border-[#3d3f6e] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#f65f7c] flex items-center justify-center">
+                      <span className="text-white text-[8px] font-bold">m</span>
+                    </div>
+                    <span className="text-[#b0b3d6] font-semibold">monday.com</span>
+                    <span className="text-[#5c5f8a]">·</span>
+                    <span className="text-[#5c5f8a]">Dev Sprint Board</span>
+                  </div>
+                  <span className="text-[#5c5f8a] text-[10px]">just now</span>
+                </div>
+
+                {/* card header */}
+                <div className="px-4 py-3 border-b border-[#2a2d52]">
+                  <div className="flex items-start gap-2 mb-2">
+                    <span className="text-[#7b7fbe] font-mono font-bold flex-shrink-0">MM-74</span>
+                    <span className="text-[#e2e4f3] font-semibold leading-snug">Hyva checkout — address validation fix</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="bg-[#7b52e8]/20 text-[#a78bfa] border border-[#7b52e8]/30 text-[10px] px-2 py-0.5 rounded font-medium">In Review</span>
+                    <span className="bg-[#1a3a2a] text-[#4ade80] border border-[#166534]/40 text-[10px] px-2 py-0.5 rounded font-medium">Staging</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-4 h-4 rounded-full bg-[#5c5f8a] flex items-center justify-center">
+                        <span className="text-white text-[8px]">M</span>
+                      </div>
+                      <span className="text-[#7b7fbe] text-[10px]">Max A</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* activity feed */}
+                <div className="px-4 py-3">
+                  <p className="text-[#5c5f8a] text-[10px] uppercase tracking-wider mb-2.5">Activity</p>
+                  <div className="space-y-3">
+                    {/* commit update */}
+                    <div className="flex gap-2">
+                      <div className="w-5 h-5 rounded-full bg-[#2a2d52] border border-[#3d3f6e] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#7b7fbe]">
+                          <circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="21"/>
+                        </svg>
+                      </div>
                       <div>
-                        <span className="text-ink font-medium">{item.label} — </span>
-                        <span className="text-muted">{item.desc}</span>
+                        <p className="text-[#b0b3d6] leading-relaxed">🔀 <span className="font-medium">3 commits pushed</span> by max-a</p>
+                        <div className="mt-1 space-y-0.5 pl-1 border-l border-[#3d3f6e]">
+                          {['a3f9c12 · fix multi-step address validation', 'd8e1047 · add unit tests', '2b5a883 · remove legacy fallback'].map(c => (
+                            <p key={c} className="text-[#5c5f8a]">{c}</p>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  ))}
+                    {/* status change */}
+                    <div className="flex gap-2">
+                      <div className="w-5 h-5 rounded-full bg-[#2a2d52] border border-[#3d3f6e] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#a78bfa]">
+                          <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                        </svg>
+                      </div>
+                      <p className="text-[#b0b3d6]">Status <span className="text-[#5c5f8a]">Working on it</span> → <span className="text-[#a78bfa] font-medium">In Review</span></p>
+                    </div>
+                    {/* review */}
+                    <div className="flex gap-2">
+                      <div className="w-5 h-5 rounded-full bg-[#1a3a2a] border border-[#166534]/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-[#4ade80] text-[8px] font-bold">R</span>
+                      </div>
+                      <p className="text-[#b0b3d6]">Review requested: <span className="text-[#a78bfa] font-medium">@ryan-p</span></p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Middleware vs Monday App */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-card border border-gold/30 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs bg-gold/10 text-gold border border-gold/20 px-2 py-0.5 rounded-full font-medium">Start here</span>
-                <h3 className="text-ink font-semibold text-sm">Middleware approach</h3>
+          {/* ── PR Lifecycle ── */}
+          <div className="mb-12">
+            <p className="text-muted text-xs uppercase tracking-widest mb-5">PR lifecycle → Monday status</p>
+            <div className="relative">
+              {/* connecting line */}
+              <div className="hidden md:block absolute top-8 left-[calc(12.5%)] right-[calc(12.5%)] h-px bg-gradient-to-r from-border-subtle via-gold/40 to-emerald-600/60" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  {
+                    event: 'Dev pushes branch',
+                    ghLabel: 'Branch pushed',
+                    ghColor: 'bg-[#1f2937] text-[#7d8590] border-[#30363d]',
+                    mondayStatus: 'Working on it',
+                    mondayColor: 'bg-[#0f3460] text-[#579dff]',
+                    dot: 'bg-[#30363d]',
+                  },
+                  {
+                    event: 'PR opened',
+                    ghLabel: '● Open',
+                    ghColor: 'bg-[#1a3a2a] text-[#3fb950] border-[#166534]/60',
+                    mondayStatus: 'In Review',
+                    mondayColor: 'bg-[#2d1b4e] text-[#a78bfa]',
+                    dot: 'bg-[#3fb950]',
+                  },
+                  {
+                    event: 'CI passes + reviewed',
+                    ghLabel: '✓ Checks passed',
+                    ghColor: 'bg-[#1a3a2a] text-[#3fb950] border-[#166534]/60',
+                    mondayStatus: 'In Review ✓',
+                    mondayColor: 'bg-[#2d1b4e] text-[#a78bfa]',
+                    dot: 'bg-[#3fb950]',
+                  },
+                  {
+                    event: 'PR merged',
+                    ghLabel: '⬤ Merged',
+                    ghColor: 'bg-[#271a4a] text-[#a371f7] border-[#6e40c9]/40',
+                    mondayStatus: 'Done',
+                    mondayColor: 'bg-[#0b3d2e] text-[#2bac76]',
+                    dot: 'bg-[#a371f7]',
+                  },
+                ].map((step, i) => (
+                  <div key={i} className="flex flex-col items-center gap-3">
+                    {/* step dot */}
+                    <div className={`w-4 h-4 rounded-full border-2 border-bg z-10 ${step.dot}`} />
+                    <div className="w-full space-y-2">
+                      <p className="text-muted text-[10px] text-center">{step.event}</p>
+                      {/* github badge */}
+                      <div className={`border rounded-lg px-3 py-2 text-center text-[11px] font-medium ${step.ghColor}`}>
+                        <div className="flex items-center justify-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+                          {step.ghLabel}
+                        </div>
+                      </div>
+                      {/* down arrow */}
+                      <div className="flex justify-center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gold">
+                          <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+                        </svg>
+                      </div>
+                      {/* monday status */}
+                      <div className={`rounded-lg px-3 py-2 text-center text-[11px] font-medium border border-transparent ${step.mondayColor}`}>
+                        <div className="flex items-center justify-center gap-1">
+                          <div className="w-3 h-3 rounded bg-[#f65f7c] flex items-center justify-center">
+                            <span className="text-white text-[6px] font-bold">m</span>
+                          </div>
+                          {step.mondayStatus}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="text-muted text-xs leading-relaxed mb-3">A single Vercel Edge Function — no Monday marketplace approval, full control, ships in a day. This is the right first step.</p>
-              <div className="space-y-1.5 text-xs text-muted">
-                {['Lives at a private URL — not exposed publicly', 'Deployed in minutes, no approval process', 'Easy to extend or modify'].map(i => (
-                  <div key={i} className="flex gap-2"><span className="text-gold">›</span>{i}</div>
+            </div>
+          </div>
+
+          {/* ── AI Actions from inside Monday ── */}
+          <div className="mb-10">
+            <p className="text-muted text-xs uppercase tracking-widest mb-5">AI actions — available on every ticket</p>
+            <div className="bg-[#1c1f3a] border border-[#3d3f6e] rounded-xl overflow-hidden">
+              {/* monday sidebar header */}
+              <div className="px-4 py-2.5 border-b border-[#3d3f6e] flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-[#f65f7c] flex items-center justify-center">
+                  <span className="text-white text-[8px] font-bold">m</span>
+                </div>
+                <span className="text-[#b0b3d6] text-xs font-semibold">AI Assistant</span>
+                <span className="ml-auto text-[10px] text-[#5c5f8a] bg-[#2a2d52] px-2 py-0.5 rounded-full">MM-74</span>
+              </div>
+              <div className="p-4 grid sm:grid-cols-2 gap-3">
+                {[
+                  { label: 'Summarise git activity', desc: 'Distills all linked commits into a plain-English summary of what changed and why', icon: '📋' },
+                  { label: 'Draft PR description',   desc: 'Generates a full PR body from commit history — ready to paste into GitHub',         icon: '✍️' },
+                  { label: 'Estimate effort',         desc: 'Reads the ticket description and returns a rough dev-hour estimate',               icon: '⏱' },
+                  { label: 'Write release notes',     desc: 'Customer-facing summary of all merged PRs in the current sprint',                  icon: '📣' },
+                ].map(a => (
+                  <div key={a.label} className="bg-[#2a2d52] border border-[#3d3f6e] hover:border-[#7b52e8]/60 rounded-lg p-3 transition-colors group cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-base">{a.icon}</span>
+                      <span className="text-[#e2e4f3] text-xs font-semibold group-hover:text-[#a78bfa] transition-colors">{a.label}</span>
+                    </div>
+                    <p className="text-[#5c5f8a] text-[11px] leading-relaxed">{a.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Security + deployment ── */}
+          <div className="grid md:grid-cols-2 gap-4 mb-0">
+            <div className="bg-card border border-emerald-800/40 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">🔒</span>
+                <h3 className="text-ink font-semibold text-sm">Security</h3>
+              </div>
+              <div className="space-y-2 text-xs">
+                {[
+                  { t: 'Webhook signature verified',  d: 'Every event is signed. Anything that doesn\'t match is rejected before processing.' },
+                  { t: 'Tokens in environment only',  d: 'No credentials in code or git — Vercel env vars only.' },
+                  { t: 'Read-only GitHub access',     d: 'Receives push/PR events. Cannot write to the repository.' },
+                  { t: 'Stateless — nothing stored',  d: 'Receives, processes, responds. No database, no log retention.' },
+                ].map(i => (
+                  <div key={i.t} className="flex gap-2">
+                    <span className="text-emerald-400 flex-shrink-0 mt-0.5">✓</span>
+                    <div><span className="text-ink font-medium">{i.t} — </span><span className="text-muted">{i.d}</span></div>
+                  </div>
                 ))}
               </div>
             </div>
             <div className="bg-card border border-border-subtle rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs bg-surface text-muted border border-border-subtle px-2 py-0.5 rounded-full font-medium">Phase 2</span>
-                <h3 className="text-ink font-semibold text-sm">Monday App (sidebar panel)</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">🚀</span>
+                <h3 className="text-ink font-semibold text-sm">Deployment path</h3>
               </div>
-              <p className="text-muted text-xs leading-relaxed mb-3">Adds a native sidebar inside Monday where the team prompts Claude directly from a ticket. More polished — ~2 extra weeks to build and submit for marketplace approval.</p>
-              <div className="space-y-1.5 text-xs text-muted">
-                {['Prompt Claude without leaving Monday', 'Approve once, installed across the account', 'Feels like a native Monday feature'].map(i => (
-                  <div key={i} className="flex gap-2"><span className="text-gold">›</span>{i}</div>
-                ))}
+              <div className="space-y-4 text-xs">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-gold/10 text-gold border border-gold/20 text-[10px] px-2 py-0.5 rounded-full font-medium">Phase 1</span>
+                    <span className="text-ink font-medium">Vercel Edge Function</span>
+                  </div>
+                  <p className="text-muted pl-1">Private webhook endpoint — no marketplace, full control, ships in a day.</p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-surface text-muted border border-border-subtle text-[10px] px-2 py-0.5 rounded-full font-medium">Phase 2</span>
+                    <span className="text-ink font-medium">Native Monday App</span>
+                  </div>
+                  <p className="text-muted pl-1">Sidebar panel inside Monday — prompt Claude from any ticket. ~2 weeks extra build.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -754,71 +915,171 @@ export default function MedmartAIDemo() {
         {/* ── Section 5: Autonomous Fix Agent ── */}
         <Section id="autofix" label="05 · Autonomous Fix Agent">
           <div className="mb-10">
-            <h2 className="font-display text-2xl font-bold text-ink mb-2">Low-Level Bugs Fixed While the Team Sleeps</h2>
-            <p className="text-muted text-sm max-w-2xl">
-              An agent monitors error logs and open tickets, attempts fixes on a sandboxed branch,
-              and opens a PR for human review. Developers approve or close — they never triage.
+            <h2 className="font-display text-2xl font-bold text-ink mb-2">An Agent That Triages, Fixes, and Opens PRs</h2>
+            <p className="text-muted text-base max-w-2xl">
+              The agent monitors error logs and open bug tickets, writes a fix on an isolated branch,
+              validates it against tests, and opens a PR. Developers review a finished solution — not a raw error.
             </p>
           </div>
 
-          {/* Flow */}
+          {/* ── Process flow with mock log + mock PR ── */}
           <div className="mb-10">
-            <p className="text-muted text-xs uppercase tracking-widest mb-5">Agent loop</p>
-            <div className="relative">
-              <div className="grid md:grid-cols-5 gap-3">
-                {[
-                  { step: '01', icon: '🪵', label: 'Error detected',    detail: 'Magento logs, Sentry, or a Monday card tagged "bug" triggers the agent' },
-                  { step: '02', icon: '🔍', label: 'Context gathered',  detail: 'Agent reads the stack trace, the relevant source files, and recent git history for that area' },
-                  { step: '03', icon: '🛠️', label: 'Fix attempted',     detail: 'Claude edits the files on an isolated branch — it can access only what\'s relevant, nothing more' },
-                  { step: '04', icon: '✅', label: 'Tests run',         detail: 'The fix is validated against existing tests. If tests fail, the agent tries again or flags it as too complex' },
-                  { step: '05', icon: '📬', label: 'PR opened',         detail: 'A PR is created with a plain-English explanation of what broke, why, and what was changed' },
-                ].map((s, i) => (
-                  <div key={i} className="bg-card border border-border-subtle rounded-xl p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-xl">{s.icon}</span>
-                      <span className="text-[10px] text-muted font-mono bg-surface px-1.5 py-0.5 rounded">{s.step}</span>
-                    </div>
-                    <p className="text-ink font-semibold text-sm mb-1.5">{s.label}</p>
-                    <p className="text-muted text-xs leading-relaxed">{s.detail}</p>
+            <p className="text-muted text-xs uppercase tracking-widest mb-6">How it works — end to end</p>
+
+            {/* Step 1: Error detected */}
+            <div className="mb-6 flex gap-4 items-start">
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-red-900/40 border border-red-700/50 flex items-center justify-center">
+                  <span className="text-red-400 text-xs font-bold">01</span>
+                </div>
+                <div className="w-px flex-1 bg-border-subtle min-h-[40px]" />
+              </div>
+              <div className="flex-1 pb-4">
+                <p className="text-ink font-semibold text-sm mb-3">Error detected in logs</p>
+                {/* Magento log mockup */}
+                <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden font-mono text-xs">
+                  <div className="px-4 py-2 border-b border-[#30363d] flex items-center justify-between">
+                    <span className="text-[#7d8590]">var/log/exception.log · Magento staging</span>
+                    <span className="flex items-center gap-1 text-red-400 text-[10px]"><span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />New error</span>
                   </div>
-                ))}
+                  <div className="p-4 space-y-1 text-[11px] leading-relaxed">
+                    <p className="text-red-400">[2026-05-14 09:12:33] main.CRITICAL: Deprecated: Return type of MedMart\Base\Model\Cart\Quote::serialize()</p>
+                    <p className="text-[#7d8590]">  must be explicitly declared in app/code/MedMart/Base/Model/Cart/Quote.php on line 84</p>
+                    <p className="text-[#7d8590]">  PHP 8.2 strict deprecation · first seen 6 times this hour</p>
+                    <p className="text-[#3fb950] mt-2">→ Agent triggered · analyzing context...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2: Context gathered */}
+            <div className="mb-6 flex gap-4 items-start">
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-blue-900/40 border border-blue-700/50 flex items-center justify-center">
+                  <span className="text-blue-400 text-xs font-bold">02</span>
+                </div>
+                <div className="w-px flex-1 bg-border-subtle min-h-[40px]" />
+              </div>
+              <div className="flex-1 pb-4">
+                <p className="text-ink font-semibold text-sm mb-3">Context gathered automatically</p>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {[
+                    { icon: '📄', label: 'Source file read', detail: 'Quote.php · 214 lines · last changed 3 weeks ago' },
+                    { icon: '🕐', label: 'Git history scanned', detail: '8 commits touching this file — pattern understood' },
+                    { icon: '🧾', label: 'PHP 8.2 rule checked', detail: 'Return type declaration required — fix is straightforward' },
+                  ].map(c => (
+                    <div key={c.label} className="bg-surface border border-border-subtle rounded-lg p-3 text-xs">
+                      <span className="text-lg block mb-1">{c.icon}</span>
+                      <p className="text-ink font-medium mb-0.5">{c.label}</p>
+                      <p className="text-muted">{c.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3: Fix written + tests pass */}
+            <div className="mb-6 flex gap-4 items-start">
+              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-purple-900/40 border border-purple-700/50 flex items-center justify-center">
+                  <span className="text-purple-400 text-xs font-bold">03</span>
+                </div>
+                <div className="w-px flex-1 bg-border-subtle min-h-[40px]" />
+              </div>
+              <div className="flex-1 pb-4">
+                <p className="text-ink font-semibold text-sm mb-3">Fix written on an isolated branch</p>
+                {/* diff mockup */}
+                <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden font-mono text-[11px]">
+                  <div className="px-4 py-2 border-b border-[#30363d] flex items-center justify-between">
+                    <span className="text-[#7d8590]">app/code/MedMart/Base/Model/Cart/Quote.php</span>
+                    <span className="text-[#7d8590] text-[10px]">agent/fix-quote-serialize-return-type</span>
+                  </div>
+                  <div className="p-4 space-y-0.5 leading-relaxed">
+                    <p className="text-[#7d8590]">@@ -82,7 +82,7 @@</p>
+                    <p className="bg-red-900/30 text-red-400 px-2 -mx-2">-  public function serialize()</p>
+                    <p className="bg-emerald-900/30 text-emerald-400 px-2 -mx-2">+  public function serialize(): string</p>
+                    <p className="text-[#e6edf3] mt-1 pl-2">{'{'}</p>
+                    <p className="text-[#e6edf3] pl-6">return json_encode($this-&gt;getData());</p>
+                    <p className="text-[#e6edf3] pl-2">{'}'}</p>
+                    <div className="mt-3 flex items-center gap-3 border-t border-[#30363d] pt-3">
+                      <span className="flex items-center gap-1 text-[#3fb950] text-[10px]"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>Tests pass · 3/3</span>
+                      <span className="flex items-center gap-1 text-[#3fb950] text-[10px]"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>Static analysis clean</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4: PR opened */}
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-emerald-900/40 border border-emerald-700/50 flex items-center justify-center">
+                  <span className="text-emerald-400 text-xs font-bold">04</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-ink font-semibold text-sm mb-3">PR opened — ready for one-click review</p>
+                {/* GitHub PR mockup */}
+                <div className="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden text-xs">
+                  <div className="px-4 py-3 border-b border-[#30363d] flex items-start gap-3">
+                    <div className="flex items-center gap-1.5 bg-[#1a7f37] text-white text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 mt-0.5">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="6" y1="9" x2="6" y2="15"/><path d="M21 9h-4a3 3 0 0 0-3 3v0a3 3 0 0 0 3 3h1"/><polyline points="18 6 21 9 18 12"/></svg>
+                      Open
+                    </div>
+                    <div>
+                      <p className="text-[#e6edf3] font-semibold">[AI Fix] Quote::serialize() return type declaration — PHP 8.2 deprecation <span className="text-[#7d8590] font-normal">#152</span></p>
+                      <p className="text-[#7d8590] mt-0.5 text-[11px]">medmart-ai-agent wants to merge 1 commit into <span className="text-[#79c0ff]">staging</span> from <span className="text-[#79c0ff]">agent/fix-quote-serialize-return-type</span></p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 border-b border-[#21262d] text-[#e6edf3] text-[11px] leading-relaxed space-y-2">
+                    <p className="font-semibold text-[#e6edf3]">What broke</p>
+                    <p className="text-[#7d8590]">PHP 8.2 requires explicit return type declarations. <span className="font-mono text-[#e6edf3]">Quote::serialize()</span> was missing one, triggering a CRITICAL deprecation logged 6 times in the last hour on staging.</p>
+                    <p className="font-semibold text-[#e6edf3] pt-1">What was changed</p>
+                    <p className="text-[#7d8590]">Added <span className="font-mono text-[#e6edf3]">: string</span> return type to <span className="font-mono text-[#e6edf3]">serialize()</span> in <span className="font-mono text-[#e6edf3]">Quote.php:84</span>. All 3 existing tests pass. Static analysis clean.</p>
+                  </div>
+                  <div className="px-4 py-2.5 flex items-center gap-4">
+                    <span className="flex items-center gap-1 text-[#3fb950] text-[10px] font-medium"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>3 checks passed</span>
+                    <span className="text-[#7d8590] text-[10px]">1 file · +1 −1</span>
+                    <span className="ml-auto text-[#7d8590] text-[10px]">Review requested: ryan-p</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* What it handles vs escalates */}
+          {/* ── Handles vs escalates ── */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <div className="bg-card border border-emerald-800/40 rounded-xl p-5">
-              <h3 className="text-emerald-400 font-semibold text-sm mb-4">✓ What the agent handles</h3>
-              <div className="space-y-2 text-xs text-muted">
+              <h3 className="text-emerald-400 font-semibold mb-4">✓ Agent handles autonomously</h3>
+              <div className="space-y-2 text-sm text-muted">
                 {[
-                  'Deprecated function calls surfaced in PHP logs',
-                  'Broken imports or missing null checks flagged by static analysis',
-                  'Template typos or incorrect escaper calls in .phtml files',
-                  'Missing translation keys in i18n files',
-                  'Outdated API calls when a vendor ships a breaking change',
-                  'Simple CSS/layout regressions caught by visual diff',
+                  'PHP deprecation warnings (return types, null-safety)',
+                  'Broken imports or missing null checks from static analysis',
+                  'Template typos and incorrect escaper calls in .phtml files',
+                  'Missing translation keys in i18n CSV files',
+                  'Outdated vendor API calls after a minor version bump',
+                  'Simple CSS/layout regressions flagged by visual diff',
                 ].map(i => (
                   <div key={i} className="flex gap-2">
-                    <span className="text-emerald-400 flex-shrink-0">✓</span>
+                    <span className="text-emerald-400 flex-shrink-0 mt-0.5">✓</span>
                     {i}
                   </div>
                 ))}
               </div>
             </div>
             <div className="bg-card border border-border-subtle rounded-xl p-5">
-              <h3 className="text-ink font-semibold text-sm mb-4">⚠ What it escalates to a human</h3>
-              <div className="space-y-2 text-xs text-muted">
+              <h3 className="text-ink font-semibold mb-4">⚠ Always escalates to a human</h3>
+              <div className="space-y-2 text-sm text-muted">
                 {[
-                  'Business logic changes — pricing, tax, checkout flow',
-                  'Database schema modifications',
-                  'Anything that touches security or authentication',
-                  'Fixes that require cross-service coordination',
-                  'Cases where the root cause is genuinely ambiguous',
-                  'Any fix where tests don\'t exist to validate the change',
+                  'Business logic — pricing, tax, checkout, B2B rules',
+                  'Database schema changes of any kind',
+                  'Security or authentication code',
+                  'Fixes that span multiple services',
+                  'Ambiguous root cause with multiple possible explanations',
+                  'Any area without tests to validate against',
                 ].map(i => (
                   <div key={i} className="flex gap-2">
-                    <span className="text-muted flex-shrink-0">⚠</span>
+                    <span className="text-amber-400 flex-shrink-0 mt-0.5">⚠</span>
                     {i}
                   </div>
                 ))}
@@ -826,30 +1087,30 @@ export default function MedmartAIDemo() {
             </div>
           </div>
 
-          {/* Impact */}
-          <div className="bg-surface border border-border-subtle rounded-xl p-6 mb-6">
-            <p className="text-ink font-semibold text-sm mb-4">Where this saves budget</p>
-            <div className="grid sm:grid-cols-3 gap-6 text-center">
+          {/* ── Impact stats ── */}
+          <div className="bg-surface border border-border-subtle rounded-xl p-8 mb-6">
+            <p className="text-ink font-semibold mb-6 text-center">Where the time savings come from</p>
+            <div className="grid sm:grid-cols-3 gap-8 text-center">
               {[
-                { stat: '~30%', label: 'of bug reports', sub: 'are low-complexity issues a developer spends 30–90 min on per ticket' },
-                { stat: '< 5 min', label: 'agent response time', sub: 'from error detected to PR open — vs. hours waiting for dev capacity' },
-                { stat: '1 review', label: 'is all it takes', sub: 'developers approve or close — no triage, no reproduction, no context-switching' },
+                { stat: '~30%', label: 'of bug tickets', sub: 'are low-complexity fixes a developer spends 30–90 min on per ticket' },
+                { stat: '< 5 min', label: 'detection to PR',  sub: 'from error detected to a reviewed, tested PR ready for approval' },
+                { stat: '1 review', label: 'to close it',     sub: 'approve or close — no triage, no reproduction, no context-switching' },
               ].map(s => (
                 <div key={s.label}>
-                  <p className="text-gold font-display text-3xl font-bold mb-1">{s.stat}</p>
-                  <p className="text-ink text-sm font-medium mb-1">{s.label}</p>
-                  <p className="text-muted text-xs leading-relaxed">{s.sub}</p>
+                  <p className="text-gold font-display text-4xl font-bold mb-1">{s.stat}</p>
+                  <p className="text-ink font-semibold mb-1">{s.label}</p>
+                  <p className="text-muted text-sm leading-relaxed">{s.sub}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="p-5 bg-surface border border-border-subtle rounded-xl">
-            <p className="text-ink text-sm font-semibold mb-2">Human always in the loop</p>
-            <p className="text-muted text-xs leading-relaxed">
-              The agent never merges its own PRs. Every fix goes through the normal review process —
-              the only difference is that a developer reviews a complete, tested solution instead of
-              starting from scratch. The team sets the boundaries; the agent works within them.
+            <p className="text-ink font-semibold mb-2">Human always in the loop</p>
+            <p className="text-muted text-sm leading-relaxed">
+              The agent opens PRs. It never merges them. Every fix goes through the standard review process —
+              the difference is that developers review a complete, tested solution rather than a raw stack trace.
+              The team defines what the agent is allowed to touch; it works within those boundaries.
             </p>
           </div>
         </Section>
