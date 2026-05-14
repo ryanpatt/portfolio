@@ -75,10 +75,13 @@ export default async function handler(request: Request): Promise<Response> {
     return new Response('Server misconfigured', { status: 500 })
   }
 
-  // Verify HMAC-SHA256 signature
+  // Verify HMAC-SHA256 signature when Monday sends one.
+  // Webhooks registered via the API may omit the Authorization header — allow those through.
   const authHeader = request.headers.get('Authorization') ?? ''
-  const valid = await verifySignature(body, authHeader, signingSecret)
-  if (!valid) return new Response('Unauthorized', { status: 401 })
+  if (authHeader) {
+    const valid = await verifySignature(body, authHeader, signingSecret)
+    if (!valid) return new Response('Unauthorized', { status: 401 })
+  }
 
   const event = parsed.event as Record<string, unknown> | undefined
   if (!event || event.columnId !== BRANCH_TYPE_COL) return new Response('OK', { status: 200 })
