@@ -172,6 +172,7 @@ export default function MedmartTraining() {
               </thead>
               <tbody className="divide-y divide-border-subtle px-4">
                 {[
+                  { col: 'Ticket #',      type: 'auto number',  desc: 'Sequential ID assigned automatically when the item is created. This is the number in MM-XX.',  usage: 'Automatic — never edit' },
                   { col: 'Status',        type: 'status',       desc: 'Where the ticket is in the workflow (see status guide below)',           usage: 'Assignee — keep current daily' },
                   { col: 'Assignee',      type: 'people',       desc: 'Who is actively working this ticket. Use multi-select for pairing.',      usage: 'Assignee / lead' },
                   { col: 'Story Points',  type: 'number',       desc: 'Rough effort estimate in Fibonacci (1, 2, 3, 5, 8). Not hours.',         usage: 'Set before sprint start' },
@@ -194,6 +195,57 @@ export default function MedmartTraining() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Ticket numbering */}
+          <h3 className="text-ink font-semibold mb-3">How MM-XX numbers are assigned</h3>
+          <p className="text-muted text-sm mb-4 leading-relaxed">
+            The <strong className="text-ink">Ticket #</strong> column is an Auto Number field — Monday assigns the next
+            sequential number automatically the moment a new item is created on the board. You never set it manually.
+          </p>
+          <div className="bg-[#1c1f3a] border border-[#3d3f6e] rounded-xl overflow-hidden mb-4">
+            <div className="px-4 py-2 border-b border-[#3d3f6e] flex items-center gap-2">
+              <div className="w-3.5 h-3.5 rounded bg-[#f65f7c] flex items-center justify-center">
+                <span className="text-white text-[7px] font-bold">m</span>
+              </div>
+              <span className="text-[#b0b3d6] text-xs font-semibold">MedMart Dev Sprint</span>
+            </div>
+            <div className="p-4 space-y-2 text-xs font-mono">
+              {[
+                { num: 13, name: 'AI product meta generation — Claude integration', status: 'Not Started', tag: 'Sprint 2' },
+                { num: 14, name: 'Semantic product search — OpenSearch embeddings',  status: 'Not Started', tag: 'Sprint 2' },
+                { num: 15, name: 'B2B quote AI assistant',                            status: 'Not Started', tag: 'Sprint 2' },
+              ].map(r => (
+                <div key={r.num} className="flex items-center gap-3 py-1.5 border-b border-[#2a2d52] last:border-0">
+                  <span className="text-[#5c5f8a] w-6 text-right flex-shrink-0">{r.num}</span>
+                  <span className="text-[#579dff] font-semibold flex-shrink-0">MM-{r.num}</span>
+                  <span className="text-[#e2e4f3] flex-1">{r.name}</span>
+                  <span className="text-[#949ba4] text-[10px] bg-[#2a2d52] px-2 py-0.5 rounded flex-shrink-0">{r.status}</span>
+                  <span className="text-[#a78bfa] text-[10px] flex-shrink-0">{r.tag}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4 mb-8 text-sm">
+            {[
+              {
+                q: 'When is the number assigned?',
+                a: 'The moment the item is created in Monday — before anyone picks it up. The number is permanent and never reused.',
+              },
+              {
+                q: 'What is MM-?',
+                a: '"MM" is a manual prefix the team adds in branch names and commits to identify the project. The number after it comes from the Ticket # column.',
+              },
+              {
+                q: 'What if items are deleted?',
+                a: 'The auto number continues from where it left off — it never reuses a deleted number. Gaps in the sequence are normal and expected.',
+              },
+            ].map(item => (
+              <div key={item.q} className="bg-card border border-border-subtle rounded-xl p-4">
+                <p className="text-ink font-medium mb-1.5">{item.q}</p>
+                <p className="text-muted text-xs leading-relaxed">{item.a}</p>
+              </div>
+            ))}
           </div>
 
           {/* Status guide */}
@@ -242,7 +294,9 @@ export default function MedmartTraining() {
 
           {/* Branching */}
           <h3 className="text-ink font-semibold mb-3">Branch naming</h3>
-          <p className="text-muted text-sm mb-3">All branches follow this pattern:</p>
+          <p className="text-muted text-sm mb-3">
+            All branches follow this pattern. The number comes from the card's <strong className="text-ink">Ticket #</strong> column — check it before cutting the branch.
+          </p>
           <Cmd>{`<type>/mm-<number>-<short-slug>
 
 # Examples
