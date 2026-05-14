@@ -788,11 +788,25 @@ export default function MedmartAIDemo() {
 
         {/* ── Section 4: Monday Board Upgrade ── */}
         <Section id="monday" label="04 · Monday.com Board Upgrade">
-          <div className="mb-10">
+          <div className="mb-8">
             <h2 className="font-display text-2xl font-bold text-ink mb-2">A Board Built for How the Team Actually Works</h2>
             <p className="text-muted text-sm max-w-2xl">
               The current Monday setup tracks tasks. This upgrade makes it a live control panel —
               time, environment state, releases, and multi-person collaboration all in one view.
+            </p>
+          </div>
+
+          {/* Board screenshot */}
+          <div className="mb-10">
+            <div className="rounded-xl overflow-hidden border border-border-subtle shadow-2xl">
+              <img
+                src="/board-example.png"
+                alt="MedMart Dev Sprint board — live example with status, time tracking, environment, and release columns"
+                className="w-full block"
+              />
+            </div>
+            <p className="text-muted text-xs text-center mt-3">
+              Live board — MedMart Dev Sprint · Sprint 1 active with 7 items across all status types
             </p>
           </div>
 
