@@ -30,23 +30,33 @@ async function mondayGql(query: string, token: string): Promise<{ data?: Record<
   return res.json() as Promise<{ data?: Record<string, unknown>; errors?: unknown[] }>
 }
 
-// Monday's auto_number column isn't readable via the API, so we derive
-// the ticket ID from the item name (MM-XX prefix) or the item's Monday ID.
-function deriveTicketId(name: string, itemId: number): string {
-  const match = name.match(/^MM-(\d+)/i)
-  if (match) return match[1]
-  // No MM-XX prefix — use last 5 digits of the Monday item ID
-  return String(itemId).slice(-5)
+// Scan all item names, find the highest MM-XX number, return max + 1
+async function getNextTicketNumber(token: string): Promise<number> {
+  const data = await mondayGql(`{
+    boards(ids: [${BOARD_ID}]) {
+      items_page(limit: 500) { items { name } }
+    }
+  }`, token)
+
+  const items = (data.data?.boards as { items_page: { items: { name: string }[] } }[] | undefined)
+    ?.[0]?.items_page?.items ?? []
+
+  let max = 0
+  for (const item of items) {
+    const m = item.name.match(/^MM-(\d+)/i)
+    if (m) { const n = parseInt(m[1], 10); if (n > max) max = n }
+  }
+  return max + 1
 }
 
-function slugify(name: string, ticketId: string): string {
+function slugify(name: string): string {
+  // Strip MM-XX prefix before slugifying
   const withoutPrefix = name.replace(/^MM-\d+\s*[·\-]?\s*/i, '')
-  const slug = withoutPrefix
+  return withoutPrefix
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 50)
-  return `mm-${ticketId}-${slug}`
 }
 
 interface MondayColumnValue { id: string; value: string | null; text: string | null }
@@ -60,7 +70,6 @@ export default async function handler(request: Request): Promise<Response> {
   let parsed: Record<string, unknown>
   try { parsed = JSON.parse(body) } catch { return new Response('Bad Request', { status: 400 }) }
 
-  // Monday challenge handshake (first-time webhook registration)
   if (parsed.challenge) {
     return new Response(JSON.stringify({ challenge: parsed.challenge }), {
       headers: { 'Content-Type': 'application/json' },
@@ -75,8 +84,6 @@ export default async function handler(request: Request): Promise<Response> {
     return new Response('Server misconfigured', { status: 500 })
   }
 
-  // Verify HMAC-SHA256 signature when Monday sends one.
-  // Webhooks registered via the API may omit the Authorization header — allow those through.
   const authHeader = request.headers.get('Authorization') ?? ''
   if (authHeader) {
     const valid = await verifySignature(body, authHeader, signingSecret)
@@ -84,48 +91,64 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   const event = parsed.event as Record<string, unknown> | undefined
-  // Monday uses camelCase in webhook payloads
   const colId = (event?.columnId ?? event?.column_id) as string | undefined
   if (!event || colId !== BRANCH_TYPE_COL) return new Response('OK', { status: 200 })
 
   const eventValue = event.value as Record<string, unknown> | null | undefined
-  if (!eventValue) return new Response('OK', { status: 200 }) // column was cleared
+  if (!eventValue) return new Response('OK', { status: 200 })
 
   const label = eventValue.label as Record<string, unknown> | undefined
   const branchType = label?.text as string | undefined
-
   if (!branchType || !['feat', 'fix', 'ops', 'hotfix'].includes(branchType)) {
     return new Response('OK', { status: 200 })
   }
 
   const itemId = (event.pulseId ?? event.pulse_id) as number
 
-  // Fetch item name and current branch value from Monday
+  // Fetch item name and current branch value
   const itemData = await mondayGql(`{
     items(ids: [${itemId}]) {
       name
-      column_values(ids: ["${BRANCH_COL}"]) {
-        id value text
-      }
+      column_values(ids: ["${BRANCH_COL}"]) { id value text }
     }
   }`, mondayToken)
 
-  const items = (itemData.data?.items as MondayItem[] | undefined)
+  const items = itemData.data?.items as MondayItem[] | undefined
   const item = items?.[0]
   if (!item) return new Response('Item not found', { status: 404 })
 
-  // Skip if branch already set
+  // Skip if branch already created
   const branchCol = item.column_values.find(c => c.id === BRANCH_COL)
-  if (branchCol?.text) return new Response(JSON.stringify({ skipped: true, branch: branchCol.text }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+  if (branchCol?.text) {
+    return new Response(JSON.stringify({ skipped: true, branch: branchCol.text }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 
-  // Derive ticket ID from name (MM-XX prefix) or Monday item ID as fallback
-  const ticketId = deriveTicketId(item.name, itemId)
-  const slug = slugify(item.name, ticketId)
-  const branchName = `${branchType}/${slug}`
+  // Auto-assign MM-XX if item name doesn't have one yet
+  let finalName = item.name
+  let ticketNum: number
 
-  // Get staging branch HEAD SHA from GitHub
+  const existingMatch = item.name.match(/^MM-(\d+)/i)
+  if (existingMatch) {
+    ticketNum = parseInt(existingMatch[1], 10)
+  } else {
+    ticketNum = await getNextTicketNumber(mondayToken)
+    finalName = `MM-${ticketNum} · ${item.name}`
+
+    // Rename the card
+    await mondayGql(`mutation {
+      change_multiple_column_values(
+        board_id: ${BOARD_ID},
+        item_id: ${itemId},
+        column_values: ${JSON.stringify(JSON.stringify({ name: finalName }))}
+      ) { id }
+    }`, mondayToken)
+  }
+
+  const branchName = `${branchType}/mm-${ticketNum}-${slugify(finalName)}`
+
+  // Get staging branch SHA
   const refRes = await fetch(
     `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/ref/heads/${BASE_BRANCH}`,
     {
@@ -138,8 +161,7 @@ export default async function handler(request: Request): Promise<Response> {
   )
 
   if (!refRes.ok) {
-    const err = await refRes.text()
-    console.error('GitHub ref lookup failed:', err)
+    console.error('GitHub ref lookup failed:', await refRes.text())
     return new Response('GitHub ref lookup failed', { status: 502 })
   }
 
@@ -147,7 +169,7 @@ export default async function handler(request: Request): Promise<Response> {
   const sha = refData.object?.sha
   if (!sha) return new Response('No SHA for base branch', { status: 502 })
 
-  // Create the branch off staging
+  // Create branch off staging
   const createRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/refs`, {
     method: 'POST',
     headers: {
@@ -160,8 +182,7 @@ export default async function handler(request: Request): Promise<Response> {
   })
 
   if (!createRes.ok) {
-    const err = await createRes.text()
-    console.error('GitHub branch create failed:', err)
+    console.error('GitHub branch create failed:', await createRes.text())
     return new Response('Branch creation failed', { status: 502 })
   }
 
@@ -175,7 +196,7 @@ export default async function handler(request: Request): Promise<Response> {
     ) { id }
   }`, mondayToken)
 
-  return new Response(JSON.stringify({ branch: branchName }), {
+  return new Response(JSON.stringify({ name: finalName, branch: branchName }), {
     headers: { 'Content-Type': 'application/json' },
   })
 }
