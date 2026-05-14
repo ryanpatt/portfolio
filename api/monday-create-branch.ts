@@ -2,10 +2,6 @@ export const config = { runtime: 'edge' }
 
 const BOARD_ID = '18413273901'
 const BRANCH_TYPE_COL = 'color_mm3bc4zz'
-const BRANCH_COL = 'text_mm3b6h07'
-const GH_OWNER = 'Med-mart'
-const GH_REPO = 'mmr-web-m2'
-const BASE_BRANCH = 'staging'
 
 async function verifySignature(body: string, authHeader: string, secret: string): Promise<boolean> {
   const enc = new TextEncoder()
@@ -30,7 +26,6 @@ async function mondayGql(query: string, token: string): Promise<{ data?: Record<
   return res.json() as Promise<{ data?: Record<string, unknown>; errors?: unknown[] }>
 }
 
-// Scan all item names, find the highest MM-XX number, return max + 1
 async function getNextTicketNumber(token: string): Promise<number> {
   const data = await mondayGql(`{
     boards(ids: [${BOARD_ID}]) {
@@ -49,19 +44,6 @@ async function getNextTicketNumber(token: string): Promise<number> {
   return max + 1
 }
 
-function slugify(name: string): string {
-  // Strip MM-XX prefix before slugifying
-  const withoutPrefix = name.replace(/^MM-\d+\s*[·\-]?\s*/i, '')
-  return withoutPrefix
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 50)
-}
-
-interface MondayColumnValue { id: string; value: string | null; text: string | null }
-interface MondayItem { name: string; column_values: MondayColumnValue[] }
-
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 })
 
@@ -78,11 +60,7 @@ export default async function handler(request: Request): Promise<Response> {
 
   const signingSecret = process.env.MONDAY_SIGNING_SECRET
   const mondayToken  = process.env.MONDAY_TOKEN
-  const githubToken  = process.env.GITHUB_TOKEN
-
-  if (!signingSecret || !mondayToken || !githubToken) {
-    return new Response('Server misconfigured', { status: 500 })
-  }
+  if (!signingSecret || !mondayToken) return new Response('Server misconfigured', { status: 500 })
 
   const authHeader = request.headers.get('Authorization') ?? ''
   if (authHeader) {
@@ -105,98 +83,31 @@ export default async function handler(request: Request): Promise<Response> {
 
   const itemId = (event.pulseId ?? event.pulse_id) as number
 
-  // Fetch item name and current branch value
-  const itemData = await mondayGql(`{
-    items(ids: [${itemId}]) {
-      name
-      column_values(ids: ["${BRANCH_COL}"]) { id value text }
-    }
-  }`, mondayToken)
+  // Fetch current item name
+  const itemData = await mondayGql(`{ items(ids: [${itemId}]) { name } }`, mondayToken)
+  const itemName = (itemData.data?.items as { name: string }[] | undefined)?.[0]?.name
+  if (!itemName) return new Response('Item not found', { status: 404 })
 
-  const items = itemData.data?.items as MondayItem[] | undefined
-  const item = items?.[0]
-  if (!item) return new Response('Item not found', { status: 404 })
-
-  // Skip if branch already created
-  const branchCol = item.column_values.find(c => c.id === BRANCH_COL)
-  if (branchCol?.text) {
-    return new Response(JSON.stringify({ skipped: true, branch: branchCol.text }), {
+  // Already has MM-XX prefix — nothing to do
+  if (/^MM-\d+/i.test(itemName)) {
+    return new Response(JSON.stringify({ skipped: true, name: itemName }), {
       headers: { 'Content-Type': 'application/json' },
     })
   }
 
-  // Auto-assign MM-XX if item name doesn't have one yet
-  let finalName = item.name
-  let ticketNum: number
+  // Assign next ticket number and rename
+  const ticketNum = await getNextTicketNumber(mondayToken)
+  const newName = `MM-${ticketNum} · ${itemName}`
 
-  const existingMatch = item.name.match(/^MM-(\d+)/i)
-  if (existingMatch) {
-    ticketNum = parseInt(existingMatch[1], 10)
-  } else {
-    ticketNum = await getNextTicketNumber(mondayToken)
-    finalName = `MM-${ticketNum} · ${item.name}`
-
-    // Rename the card
-    await mondayGql(`mutation {
-      change_multiple_column_values(
-        board_id: ${BOARD_ID},
-        item_id: ${itemId},
-        column_values: ${JSON.stringify(JSON.stringify({ name: finalName }))}
-      ) { id }
-    }`, mondayToken)
-  }
-
-  const branchName = `${branchType}/mm-${ticketNum}-${slugify(finalName)}`
-
-  // Get staging branch SHA
-  const refRes = await fetch(
-    `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/ref/heads/${BASE_BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${githubToken}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    }
-  )
-
-  if (!refRes.ok) {
-    console.error('GitHub ref lookup failed:', await refRes.text())
-    return new Response('GitHub ref lookup failed', { status: 502 })
-  }
-
-  const refData = await refRes.json() as { object?: { sha?: string } }
-  const sha = refData.object?.sha
-  if (!sha) return new Response('No SHA for base branch', { status: 502 })
-
-  // Create branch off staging
-  const createRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/refs`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${githubToken}`,
-      Accept: 'application/vnd.github+json',
-      'Content-Type': 'application/json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-    body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha }),
-  })
-
-  if (!createRes.ok) {
-    console.error('GitHub branch create failed:', await createRes.text())
-    return new Response('Branch creation failed', { status: 502 })
-  }
-
-  // Write branch name back to Monday card
   await mondayGql(`mutation {
-    change_column_value(
+    change_multiple_column_values(
       board_id: ${BOARD_ID},
       item_id: ${itemId},
-      column_id: "${BRANCH_COL}",
-      value: ${JSON.stringify(JSON.stringify(branchName))}
+      column_values: ${JSON.stringify(JSON.stringify({ name: newName }))}
     ) { id }
   }`, mondayToken)
 
-  return new Response(JSON.stringify({ name: finalName, branch: branchName }), {
+  return new Response(JSON.stringify({ name: newName }), {
     headers: { 'Content-Type': 'application/json' },
   })
 }
