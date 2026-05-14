@@ -675,6 +675,7 @@ bin/magento indexer:reindex`}</Cmd>
               <h3 className="text-ink font-semibold text-sm mb-4">What syncs automatically</h3>
               <div className="space-y-3 text-sm">
                 {[
+                  { trigger: 'Branch Type set',        result: 'Branch created from staging, Branch column filled' },
                   { trigger: 'Commit with MM-XX:',    result: 'Commit note posted on the Monday card' },
                   { trigger: 'PR opened',              result: 'Card status → In Review' },
                   { trigger: 'PR merged',              result: 'Card status → Done' },
@@ -713,8 +714,59 @@ bin/magento indexer:reindex`}</Cmd>
             </div>
           </div>
 
+          {/* Create Branch automation */}
+          <h3 className="text-ink font-semibold mb-3 mt-2">Create branch from Monday card</h3>
+          <p className="text-muted text-sm mb-4 leading-relaxed">
+            Picking a value on the <strong className="text-ink">Branch Type</strong> column triggers a webhook that creates the branch automatically
+            — no terminal needed. The branch name follows the naming convention, is cut from <code className="bg-surface px-1 rounded text-xs text-emerald-400">staging</code>, and
+            the <strong className="text-ink">Branch</strong> column on the card updates itself within seconds.
+          </p>
+
+          {/* Flow diagram */}
+          <div className="bg-[#0e1117] border border-border-subtle rounded-xl p-5 mb-5">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-0 text-sm flex-wrap justify-center">
+              {[
+                { label: 'Set Branch Type', sub: 'feat / fix / ops / hotfix', color: 'bg-[#579bfc]/10 border-[#579bfc]/30 text-[#579bfc]' },
+                { label: 'Monday webhook', sub: 'fires instantly', color: 'bg-surface border-border-subtle text-muted', arrow: true },
+                { label: 'Vercel function', sub: 'ryanpatt.com/api/…', color: 'bg-surface border-border-subtle text-muted', arrow: true },
+                { label: 'GitHub branch', sub: 'cut from staging', color: 'bg-emerald-900/20 border-emerald-800/40 text-emerald-400', arrow: true },
+                { label: 'Branch column', sub: 'auto-filled on card', color: 'bg-gold/10 border-gold/30 text-gold', arrow: true },
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-2 sm:gap-0">
+                  {step.arrow && (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-border-subtle flex-shrink-0 hidden sm:block mx-1">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  )}
+                  {step.arrow && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-border-subtle flex-shrink-0 sm:hidden">
+                      <line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/>
+                    </svg>
+                  )}
+                  <div className={`border rounded-lg px-3 py-2 text-center ${step.color}`}>
+                    <div className="font-medium text-xs whitespace-nowrap">{step.label}</div>
+                    <div className="text-[10px] opacity-70 mt-0.5 whitespace-nowrap">{step.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Branch name example */}
+          <div className="bg-card border border-border-subtle rounded-xl p-4 mb-5">
+            <p className="text-muted text-xs mb-3">Example: card is <span className="text-ink">MM-83 · Hyva PDP — product image carousel</span>, Branch Type set to <span className="text-[#579bfc]">feat</span></p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <code className="bg-[#070a12] border border-border-subtle rounded px-3 py-1.5 text-emerald-400 text-sm font-mono">feat/mm-83-hyva-pdp-product-image-carousel</code>
+              <span className="text-muted text-xs">→ created off <code className="text-emerald-400 text-xs">staging</code> · Branch column updated</span>
+            </div>
+          </div>
+
+          <Note type="tip" title="Branch already set? It skips.">
+            If the Branch column already has a value, the webhook does nothing — safe to re-select Branch Type without creating duplicate branches.
+          </Note>
+
           {/* Daily reports */}
-          <h3 className="text-ink font-semibold mb-3">Daily agent reports</h3>
+          <h3 className="text-ink font-semibold mb-3 mt-8">Daily agent reports</h3>
           <p className="text-muted text-sm mb-4 leading-relaxed">
             An automated agent posts to <strong className="text-ink">#dev-standup</strong> in Slack twice daily.
             Keep your cards accurate — this is what the agent reads.
