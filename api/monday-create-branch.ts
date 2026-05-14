@@ -3,7 +3,6 @@ export const config = { runtime: 'edge' }
 const BOARD_ID = '18413273901'
 const BRANCH_TYPE_COL = 'color_mm3bc4zz'
 const BRANCH_COL = 'text_mm3b6h07'
-const TICKET_COL = 'autonumber_mm3b7kt1'
 const GH_OWNER = 'Med-mart'
 const GH_REPO = 'mmr-web-m2'
 const BASE_BRANCH = 'staging'
@@ -31,14 +30,23 @@ async function mondayGql(query: string, token: string): Promise<{ data?: Record<
   return res.json() as Promise<{ data?: Record<string, unknown>; errors?: unknown[] }>
 }
 
-function slugify(name: string, ticketNum: number): string {
+// Monday's auto_number column isn't readable via the API, so we derive
+// the ticket ID from the item name (MM-XX prefix) or the item's Monday ID.
+function deriveTicketId(name: string, itemId: number): string {
+  const match = name.match(/^MM-(\d+)/i)
+  if (match) return match[1]
+  // No MM-XX prefix — use last 5 digits of the Monday item ID
+  return String(itemId).slice(-5)
+}
+
+function slugify(name: string, ticketId: string): string {
   const withoutPrefix = name.replace(/^MM-\d+\s*[·\-]?\s*/i, '')
   const slug = withoutPrefix
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 50)
-  return `mm-${ticketNum}-${slug}`
+  return `mm-${ticketId}-${slug}`
 }
 
 interface MondayColumnValue { id: string; value: string | null; text: string | null }
@@ -85,11 +93,11 @@ export default async function handler(request: Request): Promise<Response> {
 
   const itemId = event.pulseId as number
 
-  // Fetch ticket number and current branch value from Monday
+  // Fetch item name and current branch value from Monday
   const itemData = await mondayGql(`{
     items(ids: [${itemId}]) {
       name
-      column_values(ids: ["${TICKET_COL}", "${BRANCH_COL}"]) {
+      column_values(ids: ["${BRANCH_COL}"]) {
         id value text
       }
     }
@@ -105,12 +113,9 @@ export default async function handler(request: Request): Promise<Response> {
     headers: { 'Content-Type': 'application/json' },
   })
 
-  // Get auto-number ticket ID
-  const ticketCol = item.column_values.find(c => c.id === TICKET_COL)
-  const ticketNum = parseInt(ticketCol?.value ?? ticketCol?.text ?? '0', 10)
-  if (!ticketNum) return new Response('No ticket number', { status: 200 })
-
-  const slug = slugify(item.name, ticketNum)
+  // Derive ticket ID from name (MM-XX prefix) or Monday item ID as fallback
+  const ticketId = deriveTicketId(item.name, itemId)
+  const slug = slugify(item.name, ticketId)
   const branchName = `${branchType}/${slug}`
 
   // Get staging branch HEAD SHA from GitHub
