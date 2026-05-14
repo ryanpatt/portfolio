@@ -84,17 +84,21 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   const event = parsed.event as Record<string, unknown> | undefined
-  if (!event || event.columnId !== BRANCH_TYPE_COL) return new Response('OK', { status: 200 })
+  // Monday uses camelCase in webhook payloads
+  const colId = (event?.columnId ?? event?.column_id) as string | undefined
+  if (!event || colId !== BRANCH_TYPE_COL) return new Response('OK', { status: 200 })
 
-  const eventValue = event.value as Record<string, unknown> | undefined
-  const label = eventValue?.label as Record<string, unknown> | undefined
+  const eventValue = event.value as Record<string, unknown> | null | undefined
+  if (!eventValue) return new Response('OK', { status: 200 }) // column was cleared
+
+  const label = eventValue.label as Record<string, unknown> | undefined
   const branchType = label?.text as string | undefined
 
   if (!branchType || !['feat', 'fix', 'ops', 'hotfix'].includes(branchType)) {
     return new Response('OK', { status: 200 })
   }
 
-  const itemId = event.pulseId as number
+  const itemId = (event.pulseId ?? event.pulse_id) as number
 
   // Fetch item name and current branch value from Monday
   const itemData = await mondayGql(`{
