@@ -2,8 +2,7 @@ export const config = { runtime: 'edge' }
 
 const BOARD_ID = '18413273901'
 const BRANCH_TYPE_COL = 'color_mm3bc4zz'
-const BRANCH_COL = 'text_mm3b6h07'
-const PR_LINK_COL = 'link_mm3bz4yz'
+const BRANCH_COL = 'link_mm3cd6zn'
 const GH_OWNER = 'Med-mart'
 const GH_REPO = 'mmr-web-m2'
 const BASE_BRANCH = 'staging'
@@ -125,9 +124,9 @@ export default async function handler(request: Request): Promise<Response> {
     }`, mondayToken)
   }
 
-  // Skip if branch column already set (already processed)
+  // Skip if branch column already set — link columns store url in `text`
   const branchColText = item.column_values.find(c => c.id === BRANCH_COL)?.text
-  if (branchColText) {
+  if (branchColText && branchColText !== 'null') {
     return new Response(JSON.stringify({ skipped: true }), { headers: { 'Content-Type': 'application/json' } })
   }
 
@@ -136,24 +135,14 @@ export default async function handler(request: Request): Promise<Response> {
   const repoUrl    = `https://github.com/${GH_OWNER}/${GH_REPO}`
   const branchUrl  = `${repoUrl}/tree/${branchName}`
 
-  // ── 3. Set Branch column (text) ────────────────────────────────────────────
+  // ── 3. Set Branch column (link) → clickable GitHub branch URL ─────────────
+  const branchLinkValue = JSON.stringify({ url: branchUrl, text: branchName })
   await mondayGql(`mutation {
     change_column_value(
       board_id: ${BOARD_ID},
       item_id: ${itemId},
       column_id: "${BRANCH_COL}",
-      value: ${JSON.stringify(JSON.stringify(branchName))}
-    ) { id }
-  }`, mondayToken)
-
-  // ── 4. Set PR Link column → exact branch URL (becomes PR URL when opened) ──
-  const linkValue = JSON.stringify({ url: branchUrl, text: branchName })
-  await mondayGql(`mutation {
-    change_column_value(
-      board_id: ${BOARD_ID},
-      item_id: ${itemId},
-      column_id: "${PR_LINK_COL}",
-      value: ${JSON.stringify(linkValue)}
+      value: ${JSON.stringify(branchLinkValue)}
     ) { id }
   }`, mondayToken)
 
