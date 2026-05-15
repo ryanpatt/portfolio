@@ -146,8 +146,8 @@ export default async function handler(request: Request): Promise<Response> {
     ) { id }
   }`, mondayToken)
 
-  // ── 4. Set PR Link column → GitHub repo link (updated to PR when opened) ──
-  const linkValue = JSON.stringify({ url: repoUrl, text: `${GH_OWNER}/${GH_REPO}` })
+  // ── 4. Set PR Link column → exact branch URL (becomes PR URL when opened) ──
+  const linkValue = JSON.stringify({ url: branchUrl, text: branchName })
   await mondayGql(`mutation {
     change_column_value(
       board_id: ${BOARD_ID},

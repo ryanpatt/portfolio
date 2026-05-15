@@ -35,11 +35,13 @@ export default async function handler(request: Request): Promise<Response> {
   const event = parsed.event as Record<string, unknown> | undefined
   if (!event) return new Response('OK', { status: 200 })
 
-  const subitemId   = (event.pulseId      ?? event.pulse_id)        as number | undefined
-  const subitemName = (event.pulseName    ?? event.pulse_name)       as string | undefined
-  const parentId    = (event.parentItemId ?? event.parent_item_id)  as number | undefined
+  const subitemId     = (event.pulseId      ?? event.pulse_id)        as number | undefined
+  const subitemName   = (event.pulseName    ?? event.pulse_name)       as string | undefined
+  const parentId      = (event.parentItemId ?? event.parent_item_id)  as number | undefined
+  // boardId in subitem events is the subitems sub-board, not the parent board
+  const subitemBoardId = (event.boardId     ?? event.board_id)         as number | undefined
 
-  if (!subitemId || !subitemName || !parentId) return new Response('OK', { status: 200 })
+  if (!subitemId || !subitemName || !parentId || !subitemBoardId) return new Response('OK', { status: 200 })
 
   // Already has a prefix — skip
   if (/^MM-\d+\.\d+/i.test(subitemName)) {
@@ -77,11 +79,10 @@ export default async function handler(request: Request): Promise<Response> {
 
   const newName = `MM-${parentTicket}.${subIndex} · ${subitemName}`
 
-  // Rename the subitem — subitems use change_multiple_column_values on their own board
-  // but the simpler path is change_simple_column_value for the name field
+  // Subitems live in their own sub-board — use subitemBoardId not the parent BOARD_ID
   await mondayGql(`mutation {
     change_multiple_column_values(
-      board_id: ${BOARD_ID},
+      board_id: ${subitemBoardId},
       item_id: ${subitemId},
       column_values: ${JSON.stringify(JSON.stringify({ name: newName }))}
     ) { id }
