@@ -132,10 +132,34 @@ export default async function handler(request: Request): Promise<Response> {
 
   // ── 2. Compute branch name ─────────────────────────────────────────────────
   const branchName = `${branchType}/mm-${ticketNum}-${toBranchSlug(finalName)}`
-  const repoUrl    = `https://github.com/${GH_OWNER}/${GH_REPO}`
-  const branchUrl  = `${repoUrl}/tree/${branchName}`
+  const branchUrl  = `https://github.com/${GH_OWNER}/${GH_REPO}/tree/${branchName}`
 
-  // ── 3. Set Branch column (link) → clickable GitHub branch URL ─────────────
+  // ── 3. Create branch on GitHub from staging ────────────────────────────────
+  const githubToken = process.env.GITHUB_TOKEN
+  if (!githubToken) return new Response('Server misconfigured', { status: 500 })
+
+  const refRes = await fetch(
+    `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/ref/heads/${BASE_BRANCH}`,
+    { headers: { Authorization: `Bearer ${githubToken}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } }
+  )
+  if (!refRes.ok) return new Response('GitHub ref lookup failed', { status: 502 })
+  const sha = (await refRes.json() as { object?: { sha?: string } }).object?.sha
+  if (!sha) return new Response('No SHA for base branch', { status: 502 })
+
+  const createRes = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/git/refs`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${githubToken}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
+    body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha }),
+  })
+  if (!createRes.ok) {
+    const err = await createRes.json() as { message?: string }
+    // 422 = branch already exists — treat as success
+    if (err.message !== 'Reference already exists') {
+      return new Response('Branch creation failed', { status: 502 })
+    }
+  }
+
+  // ── 4. Set Branch column (link) → clickable GitHub branch URL ─────────────
   const branchLinkValue = JSON.stringify({ url: branchUrl, text: branchName })
   await mondayGql(`mutation {
     change_column_value(
@@ -146,24 +170,17 @@ export default async function handler(request: Request): Promise<Response> {
     ) { id }
   }`, mondayToken)
 
-  // ── 5. Post update with ready-to-copy git commands ────────────────────────
+  // ── 5. Post update with checkout command ──────────────────────────────────
   const update = [
-    `🌿 **Branch:** \`${branchName}\``,
+    `🌿 **Branch created:** \`${branchName}\``,
     ``,
-    `**Create locally and push:**`,
-    `\`\`\``,
-    `git fetch origin`,
-    `git checkout -b ${branchName} origin/${BASE_BRANCH}`,
-    `git push -u origin ${branchName}`,
-    `\`\`\``,
-    ``,
-    `**Checkout if already pushed:**`,
+    `**Checkout locally:**`,
     `\`\`\``,
     `git fetch origin`,
     `git checkout ${branchName}`,
     `\`\`\``,
     ``,
-    `🔗 [View on GitHub](${branchUrl}) _(link active once branch is pushed)_`,
+    `🔗 [View on GitHub](${branchUrl})`,
   ].join('\n')
 
   await mondayGql(`mutation {
