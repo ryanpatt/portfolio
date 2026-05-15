@@ -5,7 +5,7 @@ const BRANCH_TYPE_COL = 'color_mm3bc4zz'
 const BRANCH_COL = 'link_mm3cd6zn'
 const GH_OWNER = 'Med-mart'
 const GH_REPO = 'mmr-web-m2'
-const BASE_BRANCH = 'production'
+const BASE_BRANCH = 'master'
 
 async function verifySignature(body: string, authHeader: string, secret: string): Promise<boolean> {
   const enc = new TextEncoder()

@@ -6,7 +6,7 @@ const BRANCH_TYPE_COL = 'color_mm3c9sz1'  // Branch Type on subitems board
 const BRANCH_COL      = 'link_mm3c9ymd'   // Branch (link) on subitems board
 const GH_OWNER        = 'Med-mart'
 const GH_REPO         = 'mmr-web-m2'
-const BASE_BRANCH     = 'production'
+const BASE_BRANCH     = 'master'
 
 async function mondayGql(query: string, token: string): Promise<{ data?: Record<string, unknown>; errors?: unknown[] }> {
   const res = await fetch('https://api.monday.com/v2', {
