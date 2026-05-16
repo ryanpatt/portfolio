@@ -11,8 +11,8 @@ import Apps from './components/sections/Apps'
 import Contact from './components/sections/Contact'
 import PrintButton from './components/PrintButton'
 import Resume from './components/Resume'
+import MedmartHub from './components/MedmartHub'
 import MedmartDemo from './components/MedmartDemo'
-import MedmartProposal from './components/MedmartProposal'
 import MedmartAIDemo from './components/MedmartAIDemo'
 import MedmartTraining from './components/MedmartTraining'
 import MedmartGMCPage from './components/MedmartGMCPage'
@@ -175,8 +175,8 @@ export default function App() {
       <Routes>
         <Route path="/emails" element={<EmailsPage />} />
         <Route path="/ai" element={<AIPage />} />
+        <Route path="/medmart" element={<MedmartHub />} />
         <Route path="/medmart/demo" element={<MedmartDemo />} />
-        <Route path="/medmart/proposal" element={<MedmartProposal />} />
         <Route path="/medmart/ai-demo" element={<MedmartAIDemo />} />
         <Route path="/medmart/training" element={<MedmartTraining />} />
         <Route path="/medmart/convert-gmc" element={<MedmartGMCPage />} />

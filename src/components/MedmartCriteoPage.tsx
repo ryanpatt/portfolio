@@ -175,7 +175,7 @@ export default function MedmartCriteoPage() {
       {/* Header */}
       <header className="border-b border-border-subtle bg-bg/95 backdrop-blur sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-6">
-          <Link to="/medmart/demo" className="text-muted hover:text-ink transition-colors text-sm flex items-center gap-2 shrink-0">
+          <Link to="/medmart" className="text-muted hover:text-ink transition-colors text-sm flex items-center gap-2 shrink-0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
