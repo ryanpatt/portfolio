@@ -159,10 +159,12 @@ export default function EmailsPage() {
   const [error, setError] = useState('')
   const [total, setTotal] = useState(0)
 
-  // Filters
+  // Filters — eventtype is client-side; date range triggers API refetch
   const [filterEventType, setFilterEventType] = useState('All')
   const [dateFrom, setDateFrom] = useState(() => isoDate(new Date(Date.now() - 7 * 86400000)))
   const [dateTo, setDateTo] = useState(() => isoDate(new Date()))
+  const [pendingDateFrom, setPendingDateFrom] = useState(() => isoDate(new Date(Date.now() - 7 * 86400000)))
+  const [pendingDateTo, setPendingDateTo] = useState(() => isoDate(new Date()))
 
   // Table state
   const [page, setPage] = useState(0)
@@ -206,7 +208,7 @@ export default function EmailsPage() {
       }
       if (dateFrom) params.from = dateFrom
       if (dateTo) params.to = dateTo
-      if (filterEventType !== 'All') params.eventtype = filterEventType
+      // eventtype filtering is done client-side (API uses undocumented numeric enums)
 
       const data: EmailLog[] = await apiFetch(params)
       setEmails(Array.isArray(data) ? data : [])
@@ -219,15 +221,11 @@ export default function EmailsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, dateFrom, dateTo, filterEventType, apiFetch])
+  }, [page, dateFrom, dateTo, apiFetch])
 
   const loadStats = useCallback(async () => {
     try {
-      const data = await apiFetch({
-        action: 'stats',
-        from: dateFrom,
-        to: dateTo,
-      })
+      const data = await apiFetch({ action: 'stats', from: dateFrom, to: dateTo })
       setStats(data)
     } catch { /* non-critical */ }
   }, [dateFrom, dateTo, apiFetch])
@@ -260,9 +258,18 @@ export default function EmailsPage() {
     }
   }, [refreshInterval, loadEmails, loadStats])
 
-  // ── Sorting (client-side within page) ────────────────────────────────────────
+  // ── Client-side filter + sort ────────────────────────────────────────────────
 
-  const sorted = [...emails].sort((a, b) => {
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('desc') }
+  }
+
+  const filtered = filterEventType === 'All'
+    ? emails
+    : emails.filter(e => e.EventType === filterEventType)
+
+  const sorted = [...filtered].sort((a, b) => {
     let av: string | number = a[sortKey] ?? ''
     let bv: string | number = b[sortKey] ?? ''
     if (sortKey === 'EventDate') {
@@ -274,11 +281,6 @@ export default function EmailsPage() {
       ? String(av).localeCompare(String(bv))
       : String(bv).localeCompare(String(av))
   })
-
-  const handleSort = (key: SortKey) => {
-    if (key === sortKey) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    else { setSortKey(key); setSortDir('desc') }
-  }
 
   // ── Email preview ─────────────────────────────────────────────────────────────
 
@@ -376,8 +378,8 @@ export default function EmailsPage() {
               <label className="text-muted text-xs">From date</label>
               <input
                 type="date"
-                value={dateFrom}
-                onChange={e => setDateFrom(e.target.value)}
+                value={pendingDateFrom}
+                onChange={e => setPendingDateFrom(e.target.value)}
                 className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-gold/50"
               />
             </div>
@@ -385,24 +387,26 @@ export default function EmailsPage() {
               <label className="text-muted text-xs">To date</label>
               <input
                 type="date"
-                value={dateTo}
-                onChange={e => setDateTo(e.target.value)}
+                value={pendingDateTo}
+                onChange={e => setPendingDateTo(e.target.value)}
                 className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-gold/50"
               />
             </div>
             {/* Actions */}
             <div className="flex gap-2 items-end flex-wrap">
               <button
-                onClick={() => { setPage(0); loadEmails(); loadStats() }}
+                onClick={() => { setDateFrom(pendingDateFrom); setDateTo(pendingDateTo); setPage(0) }}
                 className="bg-gold hover:bg-gold-dark text-bg font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
               >
                 Apply
               </button>
               <button
                 onClick={() => {
+                  const df = isoDate(new Date(Date.now() - 7 * 86400000))
+                  const dt = isoDate(new Date())
                   setFilterEventType('All')
-                  setDateFrom(isoDate(new Date(Date.now() - 7 * 86400000)))
-                  setDateTo(isoDate(new Date()))
+                  setDateFrom(df); setDateTo(dt)
+                  setPendingDateFrom(df); setPendingDateTo(dt)
                   setPage(0)
                 }}
                 className="bg-surface hover:bg-card-hover border border-border-subtle text-muted hover:text-ink text-sm px-4 py-2 rounded-lg transition-colors"
