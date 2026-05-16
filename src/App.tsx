@@ -16,6 +16,7 @@ import MedmartProposal from './components/MedmartProposal'
 import MedmartAIDemo from './components/MedmartAIDemo'
 import MedmartTraining from './components/MedmartTraining'
 import AIPage from './components/AIPage'
+import EmailsPage from './components/EmailsPage'
 import ChatWidget from './components/ChatWidget'
 import { navItems } from './data/content'
 import { useActiveSection } from './hooks/useActiveSection'
@@ -170,6 +171,7 @@ export default function App() {
   return (
     <>
       <Routes>
+        <Route path="/emails" element={<EmailsPage />} />
         <Route path="/ai" element={<AIPage />} />
         <Route path="/medmart/demo" element={<MedmartDemo />} />
         <Route path="/medmart/proposal" element={<MedmartProposal />} />
