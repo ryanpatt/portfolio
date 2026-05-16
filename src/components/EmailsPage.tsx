@@ -3,33 +3,29 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface EmailLog {
+  TransactionID: string
   MsgID: string
   To: string
-  From: string
+  FromEmail: string
   Subject: string
-  Date: string
-  Status: string
-  StatusName: string
-  Opens: number
-  Clicks: number
-  ErrorMessage?: string
+  EventDate: string
+  EventType: string
   ChannelName?: string
-  Categories?: string[]
+  MessageCategory?: string
+  Message?: string
+  IPAddress?: string
+  PoolName?: string
 }
 
 interface EmailView {
-  Subject: string
-  From: string
-  To: string
-  Body?: { ContentType: string; Content: string; Charset: string }[]
+  Preview?: { Body?: string; Subject?: string; From?: string }
+  Status?: { From?: string; To?: string; Date?: string }
 }
 
 interface Stats {
-  Recipients?: number
   EmailTotal?: number
   Delivered?: number
   Bounced?: number
-  InProgress?: number
   Opened?: number
   Clicked?: number
   Unsubscribed?: number
@@ -37,49 +33,43 @@ interface Stats {
   NotDelivered?: number
 }
 
-type SortKey = 'Date' | 'To' | 'Subject' | 'Status' | 'Opens' | 'Clicks'
+type SortKey = 'EventDate' | 'To' | 'Subject' | 'EventType'
 type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE = 50
 
-const ALL_STATUSES = [
-  'All', 'Delivered', 'Opened', 'Clicked', 'Bounced',
-  'Error', 'NotDelivered', 'Unsubscribed', 'Abuse',
-  'WaitingToRetry', 'Sending', 'ReadyToSend', 'Expired',
+const ALL_EVENT_TYPES = [
+  'All', 'Sent', 'Delivered', 'Open', 'Click',
+  'Bounce', 'Complaint', 'Unsubscribe', 'Submission',
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function statusColor(status: string) {
-  switch (status) {
-    case 'Delivered':     return 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/40'
-    case 'Opened':        return 'bg-blue-900/50 text-blue-300 border border-blue-700/40'
-    case 'Clicked':       return 'bg-purple-900/50 text-purple-300 border border-purple-700/40'
-    case 'Bounced':
-    case 'Error':
-    case 'NotDelivered':  return 'bg-red-900/50 text-red-300 border border-red-700/40'
-    case 'Unsubscribed':  return 'bg-orange-900/50 text-orange-300 border border-orange-700/40'
-    case 'Abuse':         return 'bg-pink-900/50 text-pink-300 border border-pink-700/40'
-    case 'WaitingToRetry':
-    case 'Sending':       return 'bg-yellow-900/50 text-yellow-300 border border-yellow-700/40'
-    case 'ReadyToSend':   return 'bg-sky-900/50 text-sky-300 border border-sky-700/40'
-    default:              return 'bg-surface text-muted border border-border-subtle'
+function statusColor(type: string) {
+  switch (type) {
+    case 'Delivered':    return 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/40'
+    case 'Open':         return 'bg-blue-900/50 text-blue-300 border border-blue-700/40'
+    case 'Click':        return 'bg-purple-900/50 text-purple-300 border border-purple-700/40'
+    case 'Bounce':       return 'bg-red-900/50 text-red-300 border border-red-700/40'
+    case 'Complaint':    return 'bg-pink-900/50 text-pink-300 border border-pink-700/40'
+    case 'Unsubscribe':  return 'bg-orange-900/50 text-orange-300 border border-orange-700/40'
+    case 'Sent':         return 'bg-emerald-900/30 text-emerald-400 border border-emerald-700/30'
+    case 'Submission':   return 'bg-yellow-900/50 text-yellow-300 border border-yellow-700/40'
+    default:             return 'bg-surface text-muted border border-border-subtle'
   }
 }
 
-function statusDot(status: string) {
-  switch (status) {
-    case 'Delivered':     return 'bg-emerald-400'
-    case 'Opened':        return 'bg-blue-400'
-    case 'Clicked':       return 'bg-purple-400'
-    case 'Bounced':
-    case 'Error':
-    case 'NotDelivered':  return 'bg-red-400'
-    case 'Unsubscribed':  return 'bg-orange-400'
-    case 'Abuse':         return 'bg-pink-400'
-    case 'WaitingToRetry':
-    case 'Sending':       return 'bg-yellow-400 animate-pulse'
-    default:              return 'bg-gray-400'
+function statusDot(type: string) {
+  switch (type) {
+    case 'Delivered':    return 'bg-emerald-400'
+    case 'Open':         return 'bg-blue-400'
+    case 'Click':        return 'bg-purple-400'
+    case 'Bounce':       return 'bg-red-400'
+    case 'Complaint':    return 'bg-pink-400'
+    case 'Unsubscribe':  return 'bg-orange-400'
+    case 'Sent':         return 'bg-emerald-500'
+    case 'Submission':   return 'bg-yellow-400 animate-pulse'
+    default:             return 'bg-gray-400'
   }
 }
 
@@ -108,20 +98,20 @@ function isoDate(d: Date) {
 }
 
 function exportCsv(rows: EmailLog[]) {
-  const headers = ['Date', 'To', 'From', 'Subject', 'Status', 'Opens', 'Clicks', 'MsgID', 'Error']
+  const headers = ['Date', 'EventType', 'To', 'From', 'Subject', 'Channel', 'MsgID', 'TransactionID', 'Message']
   const escape = (s: string) => `"${(s || '').replace(/"/g, '""')}"`
   const lines = [
     headers.join(','),
     ...rows.map(r => [
-      escape(formatDate(r.Date)),
+      escape(formatDate(r.EventDate)),
+      escape(r.EventType),
       escape(r.To),
-      escape(r.From),
+      escape(r.FromEmail),
       escape(r.Subject),
-      escape(r.Status),
-      r.Opens,
-      r.Clicks,
+      escape(r.ChannelName || ''),
       escape(r.MsgID),
-      escape(r.ErrorMessage || ''),
+      escape(r.TransactionID),
+      escape(r.Message || ''),
     ].join(',')),
   ]
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
@@ -148,9 +138,10 @@ function SortBtn({ col, current, dir, onClick }: {
   col: SortKey; current: SortKey; dir: SortDir; onClick: (k: SortKey) => void
 }) {
   const active = col === current
+  const label = col === 'EventDate' ? 'Date' : col === 'EventType' ? 'Event' : col
   return (
     <button onClick={() => onClick(col)} className="flex items-center gap-1 group">
-      <span className={active ? 'text-gold' : 'text-muted group-hover:text-ink transition-colors'}>{col}</span>
+      <span className={active ? 'text-gold' : 'text-muted group-hover:text-ink transition-colors'}>{label}</span>
       <span className="text-muted text-xs">
         {active ? (dir === 'asc' ? '↑' : '↓') : '↕'}
       </span>
@@ -169,16 +160,13 @@ export default function EmailsPage() {
   const [total, setTotal] = useState(0)
 
   // Filters
-  const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState('All')
-  const [filterFrom, setFilterFrom] = useState('')
-  const [filterTo, setFilterTo] = useState('')
+  const [filterEventType, setFilterEventType] = useState('All')
   const [dateFrom, setDateFrom] = useState(() => isoDate(new Date(Date.now() - 7 * 86400000)))
   const [dateTo, setDateTo] = useState(() => isoDate(new Date()))
 
   // Table state
   const [page, setPage] = useState(0)
-  const [sortKey, setSortKey] = useState<SortKey>('Date')
+  const [sortKey, setSortKey] = useState<SortKey>('EventDate')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [expanded, setExpanded] = useState<string | null>(null)
 
@@ -215,39 +203,30 @@ export default function EmailsPage() {
         action: 'emails',
         limit: String(PAGE_SIZE),
         offset: String(page * PAGE_SIZE),
-        startDate: dateFrom ? `${dateFrom}T00:00:00` : '',
-        endDate: dateTo ? `${dateTo}T23:59:59` : '',
       }
-      if (filterStatus !== 'All') params.status = filterStatus
-      if (filterFrom) params.from = filterFrom
-      if (filterTo) params.to = filterTo
-      if (search) params.searchTerm = search
-
-      // Remove empty params
-      Object.keys(params).forEach(k => { if (!params[k]) delete params[k] })
+      if (dateFrom) params.from = dateFrom
+      if (dateTo) params.to = dateTo
+      if (filterEventType !== 'All') params.eventtype = filterEventType
 
       const data: EmailLog[] = await apiFetch(params)
       setEmails(Array.isArray(data) ? data : [])
-      // ElasticEmail doesn't return total count, approximate from page
       if (Array.isArray(data)) {
         if (data.length === PAGE_SIZE) setTotal((page + 2) * PAGE_SIZE)
         else setTotal(page * PAGE_SIZE + data.length)
       }
     } catch (e: unknown) {
-      if (e instanceof Error && e.message !== 'Unauthorized') {
-        setError(e.message || 'Failed to load emails')
-      }
+      setError(e instanceof Error ? e.message : 'Failed to load emails')
     } finally {
       setLoading(false)
     }
-  }, [page, dateFrom, dateTo, filterStatus, filterFrom, filterTo, search, apiFetch])
+  }, [page, dateFrom, dateTo, filterEventType, apiFetch])
 
   const loadStats = useCallback(async () => {
     try {
       const data = await apiFetch({
         action: 'stats',
-        from: dateFrom ? `${dateFrom}T00:00:00` : '',
-        to: dateTo ? `${dateTo}T23:59:59` : '',
+        from: dateFrom,
+        to: dateTo,
       })
       setStats(data)
     } catch { /* non-critical */ }
@@ -286,7 +265,10 @@ export default function EmailsPage() {
   const sorted = [...emails].sort((a, b) => {
     let av: string | number = a[sortKey] ?? ''
     let bv: string | number = b[sortKey] ?? ''
-    if (sortKey === 'Date') { av = new Date(av as string).getTime(); bv = new Date(bv as string).getTime() }
+    if (sortKey === 'EventDate') {
+      av = new Date(av as string).getTime()
+      bv = new Date(bv as string).getTime()
+    }
     if (typeof av === 'number' && typeof bv === 'number') return sortDir === 'asc' ? av - bv : bv - av
     return sortDir === 'asc'
       ? String(av).localeCompare(String(bv))
@@ -307,15 +289,14 @@ export default function EmailsPage() {
     try {
       const data = await apiFetch({ action: 'view', msgid })
       setPreviewData(data)
-    } catch (e: unknown) {
-      setPreviewData({ Subject: 'Error loading email', From: '', To: '', Body: [] })
+    } catch {
+      setPreviewData({})
     } finally {
       setPreviewLoading(false)
     }
   }
 
-  const previewHtml = previewData?.Body?.find(b => b.ContentType === 'HTML')?.Content
-    || previewData?.Body?.find(b => b.ContentType === 'PlainText')?.Content?.replace(/\n/g, '<br>')
+  const previewHtml = previewData?.Preview?.Body
     || '<p style="color:#888;font-family:sans-serif;padding:20px">No body content available.</p>'
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -333,7 +314,6 @@ export default function EmailsPage() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {/* Auto-refresh */}
           <div className="flex items-center gap-2">
             <span className="text-muted text-xs">Auto-refresh:</span>
             <select
@@ -378,51 +358,17 @@ export default function EmailsPage() {
         )}
 
         {/* ── Filters ── */}
-        <div className="bg-card border border-border-subtle rounded-xl p-4 space-y-3">
+        <div className="bg-card border border-border-subtle rounded-xl p-4">
           <div className="flex flex-wrap gap-3 items-end">
-            {/* Search */}
-            <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
-              <label className="text-muted text-xs">Search</label>
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (setPage(0), loadEmails())}
-                placeholder="Email, subject, domain..."
-                className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink placeholder-muted focus:outline-none focus:border-gold/50"
-              />
-            </div>
-            {/* From address filter */}
-            <div className="flex flex-col gap-1 min-w-[160px]">
-              <label className="text-muted text-xs">From address</label>
-              <input
-                type="text"
-                value={filterFrom}
-                onChange={e => setFilterFrom(e.target.value)}
-                placeholder="sender@..."
-                className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink placeholder-muted focus:outline-none focus:border-gold/50"
-              />
-            </div>
-            {/* To address filter */}
-            <div className="flex flex-col gap-1 min-w-[160px]">
-              <label className="text-muted text-xs">To address</label>
-              <input
-                type="text"
-                value={filterTo}
-                onChange={e => setFilterTo(e.target.value)}
-                placeholder="recipient@..."
-                className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink placeholder-muted focus:outline-none focus:border-gold/50"
-              />
-            </div>
-            {/* Status */}
-            <div className="flex flex-col gap-1 min-w-[140px]">
-              <label className="text-muted text-xs">Status</label>
+            {/* Event type */}
+            <div className="flex flex-col gap-1 min-w-[150px]">
+              <label className="text-muted text-xs">Event type</label>
               <select
-                value={filterStatus}
-                onChange={e => { setFilterStatus(e.target.value); setPage(0) }}
+                value={filterEventType}
+                onChange={e => { setFilterEventType(e.target.value); setPage(0) }}
                 className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-gold/50"
               >
-                {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
+                {ALL_EVENT_TYPES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             {/* Date range */}
@@ -454,7 +400,7 @@ export default function EmailsPage() {
               </button>
               <button
                 onClick={() => {
-                  setSearch(''); setFilterStatus('All'); setFilterFrom(''); setFilterTo('')
+                  setFilterEventType('All')
                   setDateFrom(isoDate(new Date(Date.now() - 7 * 86400000)))
                   setDateTo(isoDate(new Date()))
                   setPage(0)
@@ -467,7 +413,6 @@ export default function EmailsPage() {
                 onClick={() => exportCsv(emails)}
                 disabled={emails.length === 0}
                 className="bg-surface hover:bg-card-hover border border-border-subtle text-muted hover:text-ink text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
-                title="Export current page to CSV"
               >
                 ↓ CSV
               </button>
@@ -486,13 +431,11 @@ export default function EmailsPage() {
         <div className="bg-card border border-border-subtle rounded-xl overflow-hidden">
 
           {/* Table header */}
-          <div className="grid grid-cols-[160px_220px_1fr_130px_52px_52px_100px] gap-0 px-4 py-2.5 border-b border-border-subtle text-xs text-muted bg-surface">
-            <SortBtn col="Date"    current={sortKey} dir={sortDir} onClick={handleSort} />
-            <SortBtn col="To"      current={sortKey} dir={sortDir} onClick={handleSort} />
-            <SortBtn col="Subject" current={sortKey} dir={sortDir} onClick={handleSort} />
-            <SortBtn col="Status"  current={sortKey} dir={sortDir} onClick={handleSort} />
-            <SortBtn col="Opens"   current={sortKey} dir={sortDir} onClick={handleSort} />
-            <SortBtn col="Clicks"  current={sortKey} dir={sortDir} onClick={handleSort} />
+          <div className="grid grid-cols-[160px_200px_1fr_120px_100px] gap-0 px-4 py-2.5 border-b border-border-subtle text-xs text-muted bg-surface">
+            <SortBtn col="EventDate" current={sortKey} dir={sortDir} onClick={handleSort} />
+            <SortBtn col="To"        current={sortKey} dir={sortDir} onClick={handleSort} />
+            <SortBtn col="Subject"   current={sortKey} dir={sortDir} onClick={handleSort} />
+            <SortBtn col="EventType" current={sortKey} dir={sortDir} onClick={handleSort} />
             <span className="text-right">Actions</span>
           </div>
 
@@ -500,8 +443,8 @@ export default function EmailsPage() {
           {loading && emails.length === 0 && (
             <div className="space-y-0">
               {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="grid grid-cols-[160px_220px_1fr_130px_52px_52px_100px] gap-0 px-4 py-3 border-b border-border-subtle animate-pulse">
-                  {[140, 180, 220, 110, 30, 30, 80].map((w, j) => (
+                <div key={i} className="grid grid-cols-[160px_200px_1fr_120px_100px] gap-0 px-4 py-3 border-b border-border-subtle animate-pulse">
+                  {[140, 160, 220, 90, 80].map((w, j) => (
                     <div key={j} className="flex items-center">
                       <div className="bg-surface rounded h-3" style={{ width: w }} />
                     </div>
@@ -514,26 +457,26 @@ export default function EmailsPage() {
           {/* Empty state */}
           {!loading && emails.length === 0 && !error && (
             <div className="py-16 text-center text-muted text-sm">
-              No emails found for the selected filters.
+              No events found for the selected filters.
             </div>
           )}
 
           {/* Rows */}
           {sorted.map(email => {
-            const isExpanded = expanded === email.MsgID
+            const rowKey = email.TransactionID || email.MsgID
+            const isExpanded = expanded === rowKey
             return (
-              <div key={email.MsgID} className="border-b border-border-subtle last:border-0">
-                {/* Main row */}
+              <div key={rowKey} className="border-b border-border-subtle last:border-0">
                 <div
-                  className="grid grid-cols-[160px_220px_1fr_130px_52px_52px_100px] gap-0 px-4 py-3 hover:bg-card-hover cursor-pointer transition-colors"
-                  onClick={() => setExpanded(isExpanded ? null : email.MsgID)}
+                  className="grid grid-cols-[160px_200px_1fr_120px_100px] gap-0 px-4 py-3 hover:bg-card-hover cursor-pointer transition-colors"
+                  onClick={() => setExpanded(isExpanded ? null : rowKey)}
                 >
                   {/* Date */}
                   <div className="flex flex-col justify-center">
-                    <span className="text-ink text-xs font-medium" title={formatDate(email.Date)}>
-                      {relativeTime(email.Date)}
+                    <span className="text-ink text-xs font-medium" title={formatDate(email.EventDate)}>
+                      {relativeTime(email.EventDate)}
                     </span>
-                    <span className="text-muted text-[10px]">{new Date(email.Date).toLocaleDateString()}</span>
+                    <span className="text-muted text-[10px]">{new Date(email.EventDate).toLocaleDateString()}</span>
                   </div>
 
                   {/* To */}
@@ -548,26 +491,12 @@ export default function EmailsPage() {
                     </span>
                   </div>
 
-                  {/* Status badge */}
+                  {/* Event type badge */}
                   <div className="flex items-center">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${statusColor(email.Status)}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${statusDot(email.Status)}`} />
-                      {email.Status}
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${statusColor(email.EventType)}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusDot(email.EventType)}`} />
+                      {email.EventType}
                     </span>
-                  </div>
-
-                  {/* Opens */}
-                  <div className="flex items-center justify-center">
-                    {email.Opens > 0
-                      ? <span className="text-blue-400 text-sm font-semibold">{email.Opens}</span>
-                      : <span className="text-muted text-xs">—</span>}
-                  </div>
-
-                  {/* Clicks */}
-                  <div className="flex items-center justify-center">
-                    {email.Clicks > 0
-                      ? <span className="text-purple-400 text-sm font-semibold">{email.Clicks}</span>
-                      : <span className="text-muted text-xs">—</span>}
                   </div>
 
                   {/* Actions */}
@@ -576,12 +505,11 @@ export default function EmailsPage() {
                       onClick={() => openPreview(email.MsgID)}
                       className="text-xs text-gold/80 hover:text-gold bg-gold/5 hover:bg-gold/10 border border-gold/20 px-2.5 py-1 rounded-lg transition-colors whitespace-nowrap"
                     >
-                      View Email
+                      View
                     </button>
                     <button
-                      onClick={() => setExpanded(isExpanded ? null : email.MsgID)}
+                      onClick={() => setExpanded(isExpanded ? null : rowKey)}
                       className="text-muted hover:text-ink text-xs p-1 transition-colors"
-                      title={isExpanded ? 'Collapse' : 'Expand'}
                     >
                       {isExpanded ? '▲' : '▼'}
                     </button>
@@ -593,41 +521,47 @@ export default function EmailsPage() {
                   <div className="bg-surface/50 border-t border-border-subtle px-4 py-3 grid grid-cols-2 gap-4 text-xs">
                     <div className="space-y-1.5">
                       <div className="flex gap-2">
-                        <span className="text-muted w-20 shrink-0">Message ID</span>
+                        <span className="text-muted w-24 shrink-0">Message ID</span>
                         <span className="text-ink font-mono text-[10px] break-all">{email.MsgID}</span>
                       </div>
                       <div className="flex gap-2">
-                        <span className="text-muted w-20 shrink-0">From</span>
-                        <span className="text-ink">{email.From}</span>
+                        <span className="text-muted w-24 shrink-0">Transaction ID</span>
+                        <span className="text-ink font-mono text-[10px] break-all">{email.TransactionID}</span>
                       </div>
                       <div className="flex gap-2">
-                        <span className="text-muted w-20 shrink-0">Sent at</span>
-                        <span className="text-ink">{formatDate(email.Date)}</span>
+                        <span className="text-muted w-24 shrink-0">From</span>
+                        <span className="text-ink">{email.FromEmail}</span>
                       </div>
+                      <div className="flex gap-2">
+                        <span className="text-muted w-24 shrink-0">Event date</span>
+                        <span className="text-ink">{formatDate(email.EventDate)}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
                       {email.ChannelName && (
                         <div className="flex gap-2">
-                          <span className="text-muted w-20 shrink-0">Channel</span>
+                          <span className="text-muted w-24 shrink-0">Channel</span>
                           <span className="text-ink">{email.ChannelName}</span>
                         </div>
                       )}
-                    </div>
-                    <div className="space-y-1.5">
-                      {email.ErrorMessage && (
+                      {email.MessageCategory && (
                         <div className="flex gap-2">
-                          <span className="text-muted w-20 shrink-0">Error</span>
-                          <span className="text-red-400 break-all">{email.ErrorMessage}</span>
+                          <span className="text-muted w-24 shrink-0">Category</span>
+                          <span className="text-ink">{email.MessageCategory}</span>
                         </div>
                       )}
-                      {email.Categories && email.Categories.length > 0 && (
+                      {email.IPAddress && (
                         <div className="flex gap-2">
-                          <span className="text-muted w-20 shrink-0">Categories</span>
-                          <span className="text-ink">{email.Categories.join(', ')}</span>
+                          <span className="text-muted w-24 shrink-0">IP</span>
+                          <span className="text-ink font-mono">{email.IPAddress}</span>
                         </div>
                       )}
-                      <div className="flex gap-4 mt-1">
-                        <span className="text-muted">Opens: <span className="text-blue-400 font-semibold">{email.Opens}</span></span>
-                        <span className="text-muted">Clicks: <span className="text-purple-400 font-semibold">{email.Clicks}</span></span>
-                      </div>
+                      {email.Message && (
+                        <div className="flex gap-2">
+                          <span className="text-muted w-24 shrink-0">Message</span>
+                          <span className="text-red-400 break-all">{email.Message}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -640,7 +574,7 @@ export default function EmailsPage() {
         {(total > 0 || emails.length > 0) && (
           <div className="flex items-center justify-between text-sm text-muted">
             <span>
-              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of ~{total}
+              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of ~{total} events
               {loading && <span className="ml-2 text-gold text-xs">Loading...</span>}
             </span>
             <div className="flex items-center gap-2">
@@ -675,11 +609,16 @@ export default function EmailsPage() {
             className="bg-card border border-border-subtle rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal header */}
             <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-border-subtle flex-shrink-0">
               <div className="space-y-0.5 min-w-0">
-                <p className="text-ink font-semibold text-sm truncate">{previewData?.Subject || '—'}</p>
-                <p className="text-muted text-xs">From: {previewData?.From} &nbsp;→&nbsp; {previewData?.To}</p>
+                <p className="text-ink font-semibold text-sm truncate">
+                  {previewData?.Preview?.Subject || previewData?.Status?.From || '—'}
+                </p>
+                <p className="text-muted text-xs">
+                  From: {previewData?.Preview?.From || previewData?.Status?.From || '—'}
+                  &nbsp;→&nbsp;
+                  {previewData?.Status?.To || '—'}
+                </p>
               </div>
               <button
                 onClick={() => { setPreviewMsgId(null); setPreviewData(null) }}
@@ -688,7 +627,6 @@ export default function EmailsPage() {
                 ✕
               </button>
             </div>
-            {/* Modal body */}
             <div className="flex-1 overflow-auto">
               {previewLoading ? (
                 <div className="flex items-center justify-center h-64 text-muted text-sm">

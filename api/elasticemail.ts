@@ -44,14 +44,14 @@ export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const action = url.searchParams.get('action')
 
-  // ── Email log list ────────────────────────────────────────────────────────
+  // ── Event log list ────────────────────────────────────────────────────────
   if (action === 'emails') {
     const params = new URLSearchParams()
-    ;['limit', 'offset', 'status', 'from', 'to', 'startDate', 'endDate', 'searchTerm'].forEach(k => {
+    ;['limit', 'offset', 'eventtype', 'from', 'to'].forEach(k => {
       const v = url.searchParams.get(k)
       if (v) params.set(k, v)
     })
-    const res = await fetch(`${EE_BASE}/emails?${params}`, { headers: eeHeaders })
+    const res = await fetch(`${EE_BASE}/events?${params}`, { headers: eeHeaders })
     const data = await res.json()
     return json(data, res.ok ? 200 : res.status)
   }
@@ -73,13 +73,6 @@ export default async function handler(request: Request): Promise<Response> {
     if (from) params.set('from', from)
     if (to) params.set('to', to)
     const res = await fetch(`${EE_BASE}/statistics?${params}`, { headers: eeHeaders })
-    const data = await res.json()
-    return json(data, res.ok ? 200 : res.status)
-  }
-
-  // ── Inbound stats + channel breakdown ─────────────────────────────────────
-  if (action === 'channels') {
-    const res = await fetch(`${EE_BASE}/statistics/channel/byname?limit=50`, { headers: eeHeaders })
     const data = await res.json()
     return json(data, res.ok ? 200 : res.status)
   }
