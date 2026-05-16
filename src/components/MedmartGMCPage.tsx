@@ -200,6 +200,91 @@ const findings: { date: string; severity: 'critical' | 'high' | 'medium' | 'info
   },
 ]
 
+type TrimCategory = 'consolidate' | 'remove' | 'campaign'
+
+const trimSuggestions: {
+  category: TrimCategory
+  scripts: string[]
+  title: string
+  saving: string
+  why: string
+  revenueRisk: 'none' | 'low' | 'check'
+  action: string
+}[] = [
+  {
+    category: 'consolidate',
+    scripts: ['Convert.com (A/B)', 'VWO (A/B)', 'Omniconvert (A/B)', 'Yieldify', 'Mida (A/B)'],
+    title: 'Consolidate 5 A/B tools → 1',
+    saving: 'Remove 4 scripts, fix checkout conflicts, get valid test data',
+    why: 'Running 5 A/B and personalization tools simultaneously makes every experiment\'s results statistically invalid — you can\'t attribute a lift to one tool when 4 others are changing the same pages. Each tool also injects DOM mutations that conflict with Hyva\'s Alpine.js, the most likely cause of silent checkout failures. Pick one platform (Convert.com or VWO are the most mature) and remove the rest. The checkout reliability gain alone is worth the consolidation.',
+    revenueRisk: 'low',
+    action: 'Audit which tool has the most active experiments right now (GTM Preview + check each dashboard). Pick the one with the most running tests to keep. Pause all others in GTM → confirm checkout completes cleanly → remove the paused tags permanently.',
+  },
+  {
+    category: 'consolidate',
+    scripts: ['Microsoft Clarity', 'Hotjar'],
+    title: 'Consolidate session recording: Clarity + Hotjar → pick one',
+    saving: 'Remove 1 script, eliminate duplicate data collection',
+    why: 'Both tools record sessions, generate heatmaps, and track user flows. Running both doubles the data collection overhead with no additional insight — you\'d never watch two sets of session recordings for the same user. Microsoft Clarity is free and has no session limits. Hotjar has a cost. Unless Hotjar\'s specific features (surveys, funnels) are actively used, Clarity alone covers the use case.',
+    revenueRisk: 'none',
+    action: 'Check Hotjar dashboard — if no active surveys or scheduled recordings, cancel the subscription and remove the GTM tag. Clarity data will continue uninterrupted. If Hotjar surveys are live, migrate them to a form tool and then remove.',
+  },
+  {
+    category: 'remove',
+    scripts: ['AdRoll', 'AdRoll Retargeting'],
+    title: 'AdRoll loaded twice — remove the duplicate',
+    saving: 'Remove 1 redundant script load',
+    why: 's.adroll.com is loaded lazily via interaction trigger, and adroll.com is also loaded via phtml layout. These are two load paths for the same vendor. Duplicate pixel fires mean AdRoll is receiving doubled event data, which inflates audience sizes and can cause campaign overspend from duplicate conversion attribution.',
+    revenueRisk: 'none',
+    action: 'In GTM Preview, check which AdRoll tag fires on which events. The phtml version (Layout XML) is the more controlled load — keep that one and remove the GTM/lazy version, or vice versa. Verify AdRoll\'s event count drops by ~50% after removing one.',
+  },
+  {
+    category: 'remove',
+    scripts: ['New Relic APM'],
+    title: 'New Relic via GTM — wrong implementation',
+    saving: 'Remove 1 heavy browser agent (~50KB)',
+    why: 'New Relic is a server-side APM tool. If it\'s being injected via GTM as a browser script, it\'s the New Relic Browser agent — a ~50KB script that runs on every page to collect frontend performance data. If the team isn\'t actively reviewing New Relic Browser dashboards, this is pure overhead. Real server APM (PHP agent) should be installed at the server level, not via GTM.',
+    revenueRisk: 'none',
+    action: 'Check if anyone on the team uses New Relic Browser dashboards. If not, pause the GTM tag. Server-side New Relic (if installed) is separate and unaffected. If Browser data IS being used, move the agent install to Layout XML so it\'s controlled and not dependent on GTM loading.',
+  },
+  {
+    category: 'remove',
+    scripts: ['Zendesk / Zopim Chat'],
+    title: 'Zendesk/Zopim chat — remove if no active support queue',
+    saving: 'Remove live chat widget script (~80KB) and eliminate CLS from chat bubble',
+    why: 'Zopim is the old name for Zendesk Chat, acquired in 2014. If this tag is still in GTM unchanged since then, the account may be inactive or unmanned. A chat widget with no one responding is worse for conversion than no chat widget — users who click it and get no response leave with a negative impression. It also causes CLS from the chat bubble appearing post-load.',
+    revenueRisk: 'check',
+    action: 'Log into Zendesk → check the chat queue — is anyone monitoring it and responding? If the queue is unmanned or the account is expired, remove the GTM tag immediately. If chat IS active, keep it but move the script load to be deferred/lazy so it doesn\'t affect initial page performance.',
+  },
+  {
+    category: 'campaign',
+    scripts: ['SteelHouse Pixel'],
+    title: 'SteelHouse Pixel — remove if no active SteelHouse campaigns',
+    saving: 'Remove 1 script from order success page',
+    why: 'SteelHouse (now Criteo Commerce Media) is a retargeting and display ad platform. Its pixel only fires on the order success page, so performance impact is minimal. But if no active SteelHouse/Criteo Commerce campaigns are running, it\'s collecting purchase data for no reason and unnecessarily widening the data-sharing footprint.',
+    revenueRisk: 'check',
+    action: 'Check with the paid media team — are SteelHouse/Criteo Commerce campaigns currently running and attributed? If not, remove from Layout XML phtml. If campaigns are active but paused, keep the pixel so audience data continues to build.',
+  },
+  {
+    category: 'campaign',
+    scripts: ['Pinterest Tag'],
+    title: 'Pinterest Tag — remove if not running Pinterest ads',
+    saving: 'Remove 1 script from checkout pages',
+    why: 'The Pinterest Tag is a conversion and audience-building pixel for Pinterest Ads. It\'s currently unverified (only in CSP whitelist, not found in code) and scoped to checkout pages. If the team isn\'t actively running Pinterest ad campaigns, this collects checkout data for an unused channel.',
+    revenueRisk: 'check',
+    action: 'Ask the paid media team if Pinterest ads are active. If yes, verify the tag is actually firing (GTM Preview on checkout). If no Pinterest campaigns are running or planned, remove the tag from GTM.',
+  },
+  {
+    category: 'campaign',
+    scripts: ['Cometly Attribution'],
+    title: 'Cometly — redundant if GA4 + ad pixels cover attribution',
+    saving: 'Remove 1 third-party attribution script',
+    why: 'Cometly is a paid media attribution tool that aggregates data from ad platforms (Facebook, Google, TikTok) into a single dashboard. If the team is already using GA4 + individual ad platform pixels (Facebook Pixel, AdRoll, Pinterest) for attribution, Cometly is a third layer that largely duplicates what\'s already tracked. It also adds another domain to the CSP whitelist.',
+    revenueRisk: 'check',
+    action: 'Check if the paid media team actively uses the Cometly dashboard for campaign decisions. If the data is being used, keep it. If nobody references it, cancel and remove the GTM tag.',
+  },
+]
+
 /* ─── sub-components ─────────────────────────────────────────────────────── */
 
 const statusColors: Record<string, string> = {
@@ -271,7 +356,7 @@ function CheckRow({ label, status, note, onChange }: {
 /* ─── page ───────────────────────────────────────────────────────────────── */
 
 export default function MedmartGMCPage() {
-  const [tab, setTab] = useState<'findings' | 'scripts' | 'gmc' | 'checkout' | 'debug'>('findings')
+  const [tab, setTab] = useState<'findings' | 'scripts' | 'gmc' | 'checkout' | 'debug' | 'trim'>('findings')
   const [expandedScript, setExpandedScript] = useState<string | null>(null)
 
   const [gmcState, setGmcState] = useState<CheckStatus[]>(() => gmcChecks.map(() => 'todo'))
@@ -282,6 +367,7 @@ export default function MedmartGMCPage() {
 
   const tabs: { id: typeof tab; label: string }[] = [
     { id: 'findings',  label: 'Findings' },
+    { id: 'trim',      label: `Trim (${trimSuggestions.length})` },
     { id: 'scripts',   label: `Scripts (${scriptInventory.length})` },
     { id: 'gmc',       label: `GMC Audit (${gmcPass}/${gmcChecks.length})` },
     { id: 'checkout',  label: `Cart Audit (${coPass}/${checkoutChecks.length})` },
@@ -385,6 +471,70 @@ export default function MedmartGMCPage() {
             ))}
           </div>
         )}
+
+        {/* ── Trim tab ── */}
+        {tab === 'trim' && (() => {
+          const categoryMeta: Record<TrimCategory, { label: string; color: string; desc: string }> = {
+            consolidate: { label: 'Consolidate', color: 'text-orange-400 border-orange-500/30 bg-orange-500/5', desc: 'Redundant tools doing the same job — keep one, remove the rest' },
+            remove:      { label: 'Safe to Remove', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/5', desc: 'Dead weight with no meaningful function or revenue tie' },
+            campaign:    { label: 'Remove if Campaign Inactive', color: 'text-blue-400 border-blue-500/30 bg-blue-500/5', desc: 'Only worth keeping if the associated paid media channel is actively running' },
+          }
+          const riskLabel: Record<'none' | 'low' | 'check', { text: string; color: string }> = {
+            none:  { text: 'No revenue risk', color: 'text-emerald-400' },
+            low:   { text: 'Minimal risk', color: 'text-yellow-400' },
+            check: { text: 'Confirm first', color: 'text-orange-400' },
+          }
+          const groups: TrimCategory[] = ['consolidate', 'remove', 'campaign']
+          return (
+            <div className="space-y-8">
+              <p className="text-sm text-muted">
+                Scripts and tools that can be removed or consolidated without impacting revenue — based on redundancy, wrong implementation, or dependency on inactive campaigns. Each recommendation includes how to safely verify before removing.
+              </p>
+              {groups.map(cat => {
+                const items = trimSuggestions.filter(s => s.category === cat)
+                const meta = categoryMeta[cat]
+                return (
+                  <div key={cat}>
+                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold mb-4 ${meta.color}`}>
+                      {meta.label}
+                      <span className="font-normal opacity-70">— {meta.desc}</span>
+                    </div>
+                    <div className="space-y-4">
+                      {items.map((item, i) => (
+                        <div key={i} className="bg-white/[0.02] border border-border-subtle rounded-lg p-5">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
+                            <span className={`text-xs font-medium shrink-0 ${riskLabel[item.revenueRisk].color}`}>
+                              {riskLabel[item.revenueRisk].text}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {item.scripts.map(s => (
+                              <span key={s} className="inline-block px-2 py-0.5 rounded bg-white/[0.05] border border-border-subtle text-xs font-mono text-muted">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-sm text-muted leading-relaxed mb-3">{item.why}</p>
+                          <div className="bg-white/[0.04] rounded-md px-3 py-2">
+                            <span className="text-xs font-semibold text-gold mr-2">Action:</span>
+                            <span className="text-xs text-ink/80">{item.action}</span>
+                          </div>
+                          {item.saving && (
+                            <p className="text-xs text-emerald-400/70 mt-2 flex items-center gap-1">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                              {item.saving}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
 
         {/* ── Scripts tab ── */}
         {tab === 'scripts' && (
