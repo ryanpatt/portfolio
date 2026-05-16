@@ -5,7 +5,7 @@ const EE_BASE = 'https://api.elasticemail.com/v4'
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type',
 }
 
 function json(data: unknown, status = 200) {
@@ -15,14 +15,27 @@ function json(data: unknown, status = 200) {
   })
 }
 
+function clientIp(request: Request): string {
+  return (
+    request.headers.get('x-real-ip') ||
+    (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+    ''
+  )
+}
+
 export default async function handler(request: Request): Promise<Response> {
   if (request.method === 'OPTIONS') return new Response(null, { headers: cors })
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405)
 
-  // Password gate
-  const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim()
-  const password = process.env.EMAIL_DASHBOARD_PASSWORD
-  if (!password || token !== password) return json({ error: 'Unauthorized' }, 401)
+  // IP allowlist gate
+  const allowedRaw = process.env.ALLOWED_IPS || ''
+  const allowed = allowedRaw.split(',').map(s => s.trim()).filter(Boolean)
+  if (allowed.length > 0) {
+    const ip = clientIp(request)
+    if (!ip || !allowed.includes(ip)) {
+      return json({ error: 'Forbidden' }, 403)
+    }
+  }
 
   const apiKey = process.env.ELASTICEMAIL_API_KEY
   if (!apiKey) return json({ error: 'ElasticEmail API key not configured' }, 500)

@@ -161,11 +161,6 @@ function SortBtn({ col, current, dir, onClick }: {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function EmailsPage() {
-  // Auth
-  const [password, setPassword] = useState(() => sessionStorage.getItem('ee_pw') || '')
-  const [authed, setAuthed] = useState(false)
-  const [authError, setAuthError] = useState('')
-
   // Data
   const [emails, setEmails] = useState<EmailLog[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
@@ -202,33 +197,13 @@ export default function EmailsPage() {
 
   const apiFetch = useCallback(async (params: Record<string, string>) => {
     const qs = new URLSearchParams(params).toString()
-    const res = await fetch(`/api/elasticemail?${qs}`, {
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('ee_pw') || ''}` },
-    })
-    if (res.status === 401) {
-      sessionStorage.removeItem('ee_pw')
-      setAuthed(false)
-      throw new Error('Unauthorized')
-    }
+    const res = await fetch(`/api/elasticemail?${qs}`)
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.error || `HTTP ${res.status}`)
     }
     return res.json()
   }, [])
-
-  // ── Auth ────────────────────────────────────────────────────────────────────
-
-  const tryLogin = async () => {
-    setAuthError('')
-    try {
-      await apiFetch({ action: 'stats' })
-      sessionStorage.setItem('ee_pw', password)
-      setAuthed(true)
-    } catch {
-      setAuthError('Incorrect password.')
-    }
-  }
 
   // ── Load emails ─────────────────────────────────────────────────────────────
 
@@ -279,15 +254,15 @@ export default function EmailsPage() {
   }, [dateFrom, dateTo, apiFetch])
 
   useEffect(() => {
-    if (authed) { loadEmails(); loadStats() }
-  }, [authed, loadEmails, loadStats])
+    loadEmails(); loadStats()
+  }, [loadEmails, loadStats])
 
   // ── Auto-refresh ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (refreshRef.current) clearTimeout(refreshRef.current)
     if (countdownRef.current) clearInterval(countdownRef.current)
-    if (!refreshInterval || !authed) { setCountdown(0); return }
+    if (!refreshInterval) { setCountdown(0); return }
 
     setCountdown(refreshInterval)
     countdownRef.current = setInterval(() => {
@@ -304,7 +279,7 @@ export default function EmailsPage() {
       if (refreshRef.current) clearTimeout(refreshRef.current)
       if (countdownRef.current) clearInterval(countdownRef.current)
     }
-  }, [refreshInterval, authed, loadEmails, loadStats])
+  }, [refreshInterval, loadEmails, loadStats])
 
   // ── Sorting (client-side within page) ────────────────────────────────────────
 
@@ -345,37 +320,6 @@ export default function EmailsPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  // Password gate
-  if (!authed) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-        <div className="bg-card border border-border-subtle rounded-2xl p-8 w-full max-w-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-2xl">📧</span>
-            <h1 className="font-display text-xl font-bold text-ink">Email Monitor</h1>
-          </div>
-          <p className="text-muted text-sm mb-5">Enter the dashboard password to continue.</p>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && tryLogin()}
-            placeholder="Password"
-            className="w-full bg-surface border border-border-subtle rounded-lg px-4 py-2.5 text-ink placeholder-muted text-sm mb-3 focus:outline-none focus:border-gold/50"
-            autoFocus
-          />
-          {authError && <p className="text-red-400 text-xs mb-3">{authError}</p>}
-          <button
-            onClick={tryLogin}
-            className="w-full bg-gold hover:bg-gold-dark text-bg font-semibold py-2.5 rounded-lg text-sm transition-colors"
-          >
-            Sign In
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-bg text-ink font-sans">
 
@@ -413,12 +357,6 @@ export default function EmailsPage() {
             className="flex items-center gap-1.5 bg-gold/10 hover:bg-gold/20 border border-gold/30 text-gold text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
           >
             <span className={loading ? 'animate-spin' : ''}>⟳</span> Refresh
-          </button>
-          <button
-            onClick={() => { sessionStorage.removeItem('ee_pw'); setAuthed(false) }}
-            className="text-muted hover:text-ink text-xs transition-colors"
-          >
-            Sign out
           </button>
         </div>
       </div>
