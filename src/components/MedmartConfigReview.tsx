@@ -493,31 +493,40 @@ export default function MedmartConfigReview() {
         {tab === 'workflow' && (
           <div className="space-y-6">
             <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
-              <h2 className="text-base font-semibold text-ink mb-3">Branching workflow note</h2>
+              <h2 className="text-base font-semibold text-ink mb-3">Branching workflow</h2>
               <p className="text-sm text-muted leading-relaxed mb-4">
-                This cleanup was executed directly on the local <code className="text-xs text-gold bg-black/30 px-1 rounded">staging</code> branch because no branch had been decided yet — fine for exploratory work,
-                but not the right long-term pattern. Working directly on <code className="text-xs text-gold bg-black/30 px-1 rounded">staging</code> skips the isolation/review gate and means a single rollback target.
+                Adobe Commerce Cloud uses a GitOps deploy flow — pushing to a long-lived branch deploys to its matching environment.
+                Feature work branches off <code className="text-xs text-gold bg-black/30 px-1 rounded">production</code> (the deploy-to-prod ref), PRs into <code className="text-xs text-gold bg-black/30 px-1 rounded">staging</code> for QA in the staging environment,
+                then PRs into <code className="text-xs text-gold bg-black/30 px-1 rounded">production</code> for release. Pushing any new branch auto-provisions an integration environment.
               </p>
               <div className="bg-black/40 border border-border-subtle rounded p-4 font-mono text-xs text-muted leading-relaxed mb-4">
-                <div><span className="text-blue-400">feature/*</span> <span className="text-border-subtle">← branch off production (or main)</span></div>
-                <div className="ml-4 text-border-subtle">↓</div>
-                <div><span className="text-yellow-400">staging</span> <span className="text-border-subtle">← PR target for QA; deployed to staging environment</span></div>
-                <div className="ml-4 text-border-subtle">↓</div>
-                <div><span className="text-emerald-400">production</span> <span className="text-border-subtle">← PR target for release; deployed to production environment</span></div>
+                <div><span className="text-blue-400">MM-XXX-feature-branch</span> <span className="text-border-subtle">← branched off production</span></div>
+                <div className="ml-4 text-border-subtle">↓ PR</div>
+                <div><span className="text-yellow-400">staging</span> <span className="text-border-subtle">← integration branch; merging deploys to staging environment for QA</span></div>
+                <div className="ml-4 text-border-subtle">↓ PR</div>
+                <div><span className="text-emerald-400">production</span> <span className="text-border-subtle">← release branch; merging deploys to production environment</span></div>
               </div>
-              <p className="text-sm text-muted leading-relaxed">
-                Recommended split when committing this work:
+              <p className="text-sm text-muted leading-relaxed mb-3">
+                This audit landed on <strong className="text-ink">three feature branches</strong>, each cut from <code className="text-xs text-gold bg-black/30 px-1 rounded">production</code> and each intended to PR into <code className="text-xs text-gold bg-black/30 px-1 rounded">staging</code> independently:
               </p>
-              <ul className="space-y-2 mt-2 text-sm text-muted">
-                <li className="flex items-start gap-2">
-                  <span className="text-border-subtle shrink-0 mt-0.5">—</span>
-                  <span><code className="text-xs text-gold bg-black/30 px-1 rounded">feat/conversion-tracking-medmart</code> — MedMart_Criteo + MedMart_Invoca modules + Conversion Tracking section refactor + nginx /pub/static fix + dev/WARDEN_COMMANDS.md</span>
+              <ul className="space-y-3 mt-2 text-sm text-muted">
+                <li className="bg-black/20 border border-border-subtle/60 rounded-lg p-3">
+                  <div className="font-mono text-xs text-blue-400 mb-1">MM-XXX-criteo-invoca-conversion-tracking</div>
+                  <div className="text-xs leading-relaxed">New <code className="text-xs text-gold bg-black/30 px-1 rounded">MedMart_Criteo</code> and <code className="text-xs text-gold bg-black/30 px-1 rounded">MedMart_Invoca</code> modules, the Conversion Tracking admin section, and supporting wiring: <code className="text-xs text-gold bg-black/30 px-1 rounded">criteo_cookie_id</code> capture in <code className="text-xs text-gold bg-black/30 px-1 rounded">checkout-fields-assigner.js</code>, admin order grid column, and <code className="text-xs text-gold bg-black/30 px-1 rounded">sales_order_grid</code> schema column.</div>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-border-subtle shrink-0 mt-0.5">—</span>
-                  <span><code className="text-xs text-gold bg-black/30 px-1 rounded">cleanup/module-audit-2026-05</code> — all the deletions, consolidations, and .DS_Store hygiene from this audit + the audit document itself</span>
+                <li className="bg-black/20 border border-border-subtle/60 rounded-lg p-3">
+                  <div className="font-mono text-xs text-emerald-400 mb-1">MM-XXX-module-config-cleanup-audit-2026-05</div>
+                  <div className="text-xs leading-relaxed">Module removals (Tatvam_Wisernotify, MedMart_AmastyAffiliate, SwissupCheckoutfieldsFix), <code className="text-xs text-gold bg-black/30 px-1 rounded">composer remove amasty/affiliate</code>, the Swissup <code className="text-xs text-gold bg-black/30 px-1 rounded">value</code>/FK schema fold, <code className="text-xs text-gold bg-black/30 px-1 rounded">.DS_Store</code> hygiene, the nginx <code className="text-xs text-gold bg-black/30 px-1 rounded">/pub/static</code> dev-mode publisher fix, and the audit document.</div>
+                </li>
+                <li className="bg-black/20 border border-border-subtle/60 rounded-lg p-3">
+                  <div className="font-mono text-xs text-yellow-400 mb-1">MM-XXX-gmc-convertcart-third-party-audit</div>
+                  <div className="text-xs leading-relaxed">GMC feed fixes, ConvertCart wiring, and third-party-script changes from the marketing/conversion audit. <em>Branch not yet created — no code changes from that effort landed in this session</em>.</div>
                 </li>
               </ul>
+              <p className="text-xs text-muted leading-relaxed mt-4">
+                The <code className="text-xs text-gold bg-black/30 px-1 rounded">MM-XXX</code> prefix is a placeholder — replace with the actual Monday.com ticket id before pushing.
+                Branches 1 and 2 contain non-overlapping changes to the same shared files (<code className="text-xs text-gold bg-black/30 px-1 rounded">app/etc/config.php</code>, <code className="text-xs text-gold bg-black/30 px-1 rounded">app/code/MedMart/SwissupCheckoutFields/etc/db_schema.xml</code>, <code className="text-xs text-gold bg-black/30 px-1 rounded">db_schema_whitelist.json</code>); git will auto-merge them cleanly when both PR into staging.
+              </p>
             </section>
 
             <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
