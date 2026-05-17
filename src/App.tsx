@@ -21,6 +21,7 @@ import MedmartConfigReview from './components/MedmartConfigReview'
 import KloyHub from './components/KloyHub'
 import KloyProject from './components/KloyProject'
 import FxchPolc from './components/FxchPolc'
+import FxchModel from './components/FxchModel'
 import AIPage from './components/AIPage'
 import EmailsPage from './components/EmailsPage'
 import ChatWidget from './components/ChatWidget'
@@ -189,6 +190,7 @@ export default function App() {
         <Route path="/kloy/demo" element={<KloyHub />} />
         <Route path="/kloy/demo/:slug" element={<KloyProject />} />
         <Route path="/kloy/fxch" element={<FxchPolc />} />
+        <Route path="/kloy/fxch/model" element={<FxchModel />} />
         <Route path="/resume" element={<Resume />} />
         <Route path="*" element={<HashRedirect />} />
       </Routes>

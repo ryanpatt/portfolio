@@ -30,6 +30,13 @@ export default function FxchPolc() {
           calls that look optimistic. Not a polished pitch.
         </p>
 
+        <Link
+          to="/kloy/fxch/model"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-200 hover:bg-emerald-500/15"
+        >
+          → Open the interactive financial model
+        </Link>
+
         <Section title="Summary">
           <p className="text-zinc-300 leading-relaxed">
             FTCH is well-planned at the <em>feature and tooling</em> level and weakly
