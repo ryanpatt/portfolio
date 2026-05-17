@@ -17,6 +17,7 @@ import MedmartAIDemo from './components/MedmartAIDemo'
 import MedmartTraining from './components/MedmartTraining'
 import MedmartGMCPage from './components/MedmartGMCPage'
 import MedmartCriteoPage from './components/MedmartCriteoPage'
+import MedmartConfigReview from './components/MedmartConfigReview'
 import AIPage from './components/AIPage'
 import EmailsPage from './components/EmailsPage'
 import ChatWidget from './components/ChatWidget'
@@ -181,6 +182,7 @@ export default function App() {
         <Route path="/medmart/training" element={<MedmartTraining />} />
         <Route path="/medmart/convert-gmc" element={<MedmartGMCPage />} />
         <Route path="/medmart/criteo" element={<MedmartCriteoPage />} />
+        <Route path="/medmart/config-review" element={<MedmartConfigReview />} />
         <Route path="/resume" element={<Resume />} />
         <Route path="*" element={<HashRedirect />} />
       </Routes>

@@ -99,6 +99,26 @@ const pages: {
       </svg>
     ),
   },
+  {
+    path: '/medmart/config-review',
+    category: 'Cleanup',
+    categoryColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    title: 'Module & Config Review',
+    description: 'Scope-aware audit of disabled-but-installed modules, orphan per-store config rows, and consolidation candidates across the Adobe Commerce Enterprise stack.',
+    bullets: [
+      'Per-scope core_config_data scan across all 3 websites',
+      '3 modules removed, 1 composer package dropped, 53 orphan rows cleaned',
+      '6 items flagged for team review with business-domain rationale',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M3 6h18M3 12h18M3 18h18" />
+        <circle cx="8" cy="6" r="1.5" fill="currentColor" />
+        <circle cx="16" cy="12" r="1.5" fill="currentColor" />
+        <circle cx="10" cy="18" r="1.5" fill="currentColor" />
+      </svg>
+    ),
+  },
 ]
 
 export default function MedmartHub() {
