@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 /* ─── data ──────────────────────────────────────────────────────────────── */
@@ -113,8 +113,52 @@ const deferred: { item: string; reason: string }[] = [
 
 /* ─── page ───────────────────────────────────────────────────────────────── */
 
+const validTabs: TabId[] = ['overview', 'findings', 'executed', 'flagged', 'deferred', 'workflow']
+const flaggedIds = flagged.map(f => f.id) // F1..F6 — sub-anchors that auto-scroll inside the Flagged tab
+
+function readHash(): { tab: TabId; scrollTo: string | null } {
+  if (typeof window === 'undefined') return { tab: 'overview', scrollTo: null }
+  const raw = window.location.hash.replace('#', '')
+  if (validTabs.includes(raw as TabId)) return { tab: raw as TabId, scrollTo: null }
+  if (flaggedIds.includes(raw)) return { tab: 'flagged', scrollTo: raw }
+  return { tab: 'overview', scrollTo: null }
+}
+
 export default function MedmartConfigReview() {
-  const [tab, setTab] = useState<TabId>('overview')
+  const [tab, setTab] = useState<TabId>(() => readHash().tab)
+
+  // Keep URL hash in sync with active tab (replaceState avoids polluting history)
+  useEffect(() => {
+    const desired = `#${tab}`
+    // Don't overwrite a flagged-item sub-anchor (#F1..#F6) while it's still pointing at the flagged tab
+    if (tab === 'flagged' && flaggedIds.includes(window.location.hash.replace('#', ''))) return
+    if (window.location.hash !== desired) {
+      window.history.replaceState(null, '', desired)
+    }
+  }, [tab])
+
+  // React to browser back/forward and external hash changes
+  useEffect(() => {
+    const onHashChange = () => {
+      const { tab: next, scrollTo } = readHash()
+      setTab(next)
+      if (scrollTo) {
+        // wait for the flagged tab content to render
+        setTimeout(() => document.getElementById(scrollTo)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+      }
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  // On first mount, if landed on a flagged sub-anchor, scroll once the content paints
+  useEffect(() => {
+    const { scrollTo } = readHash()
+    if (scrollTo) {
+      setTimeout(() => document.getElementById(scrollTo)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'overview',  label: 'Overview' },
@@ -393,9 +437,24 @@ export default function MedmartConfigReview() {
         {tab === 'flagged' && (
           <div className="space-y-3">
             {flagged.map(f => (
-              <section key={f.id} className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
+              <section
+                key={f.id}
+                id={f.id}
+                className="bg-white/[0.02] border border-border-subtle rounded-xl p-6 scroll-mt-20"
+              >
                 <div className="flex items-start gap-3 mb-3">
-                  <span className="shrink-0 text-xs font-mono font-semibold text-muted">{f.id}</span>
+                  <a
+                    href={`#${f.id}`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      window.history.replaceState(null, '', `#${f.id}`)
+                      navigator.clipboard?.writeText(window.location.href)
+                    }}
+                    className="shrink-0 text-xs font-mono font-semibold text-muted hover:text-gold transition-colors"
+                    title="Copy link to this item"
+                  >
+                    {f.id}
+                  </a>
                   <h2 className="text-base font-semibold text-ink flex-1">{f.title}</h2>
                   <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${riskColors[f.risk]}`}>
                     {f.risk}
