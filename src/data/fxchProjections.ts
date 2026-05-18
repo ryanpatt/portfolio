@@ -29,11 +29,12 @@ export type Assumptions = {
   infraBaseMonthly: number
   infraPerMarketMonthly: number
   aiBaseMonthly: number
-  smsPerOrder: number             // ~3 SMS per order at ~$0.008
+  smsPerOrder: number                   // ~3 SMS per order at ~$0.008
   backgroundChecksPerMarketMonthly: number
-  marketLaunchCost: number        // one-time marketing per launch
+  marketLaunchCost: number              // one-time marketing per launch
   insuranceMonthly: number
-  // Headcount cost is a step function — see headcountCost() below
+  localContractorPerMarketMonthly: number // 1099 local community manager per active market
+  // Employee headcount cost is a yearly step — see headcountCost() below
 
   // --- Modeling horizon ---
   months: number
@@ -71,6 +72,7 @@ const SHARED: Pick<
   | 'backgroundChecksPerMarketMonthly'
   | 'marketLaunchCost'
   | 'insuranceMonthly'
+  | 'localContractorPerMarketMonthly'
   | 'months'
 > = {
   averageItemValue: 25,
@@ -82,13 +84,14 @@ const SHARED: Pick<
   merchantRegistrationFee: 99,
   merchantOnboardingFee: 75,
   merchantChurnMonthly: 0.04, // 4%/mo ≈ 38% annual — realistic for small-biz SMB
-  infraBaseMonthly: 400,
-  infraPerMarketMonthly: 60,
-  aiBaseMonthly: 150,
+  infraBaseMonthly: 350,
+  infraPerMarketMonthly: 40,
+  aiBaseMonthly: 100,
   smsPerOrder: 0.025,           // 3 SMS × ~$0.008
-  backgroundChecksPerMarketMonthly: 200,
-  marketLaunchCost: 3000,
-  insuranceMonthly: 1500,
+  backgroundChecksPerMarketMonthly: 150,
+  marketLaunchCost: 1500,
+  insuranceMonthly: 500,
+  localContractorPerMarketMonthly: 1500, // 10 hrs/wk @ $35/hr local 1099
   months: 36,
 }
 
@@ -97,12 +100,12 @@ export const scenarios: Scenario[] = [
     key: 'bear',
     label: 'Bear',
     blurb:
-      'Small-town reality: slow merchant ramp, customers order ~3×/merchant/day at maturity, launches every 90 days.',
+      '3-person team learns slow: 1 market opens at month 1, 2nd at month 7, 3rd at month 13. Six merchants per town, three orders/day at maturity.',
     assumptions: {
       ...SHARED,
-      monthsBetweenLaunches: 3,
-      merchantsPerMarketMature: 8,
-      monthsToMatureMerchants: 9,
+      monthsBetweenLaunches: 6,
+      merchantsPerMarketMature: 6,
+      monthsToMatureMerchants: 6,
       ordersPerMerchantDayMature: 3,
       monthsToMatureOrders: 9,
     },
@@ -111,28 +114,28 @@ export const scenarios: Scenario[] = [
     key: 'base',
     label: 'Base',
     blurb:
-      'Disciplined ramp: new market every 60 days, 12 merchants/market, 5 orders/merchant/day. Reflects realistic small-town demand.',
+      '3-person team finds a rhythm: new market every 4 months, 10 merchants per town, 4 orders/day at maturity. Realistic for a lean operation.',
     assumptions: {
       ...SHARED,
-      monthsBetweenLaunches: 2,
-      merchantsPerMarketMature: 12,
+      monthsBetweenLaunches: 4,
+      merchantsPerMarketMature: 10,
       monthsToMatureMerchants: 6,
-      ordersPerMerchantDayMature: 5,
-      monthsToMatureOrders: 6,
+      ordersPerMerchantDayMature: 4,
+      monthsToMatureOrders: 8,
     },
   },
   {
     key: 'bull',
     label: 'Bull',
     blurb:
-      'Master-plan ramp: new market every month, 15 merchants/market, 8 orders/merchant/day. Requires productized launch motion and near-perfect execution.',
+      '3-person team firing on all cylinders: new market every 3 months, 12 merchants per town, 6 orders/day at maturity. Top end of what a lean team can sustain.',
     assumptions: {
       ...SHARED,
-      monthsBetweenLaunches: 1,
-      merchantsPerMarketMature: 15,
+      monthsBetweenLaunches: 3,
+      merchantsPerMarketMature: 12,
       monthsToMatureMerchants: 4,
-      ordersPerMerchantDayMature: 8,
-      monthsToMatureOrders: 4,
+      ordersPerMerchantDayMature: 6,
+      monthsToMatureOrders: 6,
     },
   },
 ]
@@ -165,32 +168,26 @@ export function headcountCost(month: number): {
   phase: string
   detail: string
 } {
-  // Step function — based on realistic comp (US, partially deferred founders)
-  if (month <= 6) {
-    return {
-      monthly: 35000,
-      phase: 'Phase 1 — Pilot',
-      detail: 'Founder $10k + CTO $12k + tech specialist $5k + 2 CMs $4k each',
-    }
-  }
+  // 3-person team. Period. Local market work is 1099 contractors (modeled separately
+  // as localContractorPerMarketMonthly). Year-over-year raises are the only step.
   if (month <= 12) {
     return {
-      monthly: 75000,
-      phase: 'Phase 1.5 — Validation',
-      detail: 'Above + 2 engineers $15k each + ops coord $8k',
+      monthly: 13000,
+      phase: 'Year 1 — Founding team',
+      detail: 'Founder $3k + Engineer/CTO $6k + Ops/CM $4k. Heavy equity, light cash.',
     }
   }
   if (month <= 24) {
     return {
-      monthly: 165000,
-      phase: 'Phase 2 — Regional',
-      detail: 'Above + 3 engineers + designer + 5 more CMs + finance/legal fraction',
+      monthly: 18000,
+      phase: 'Year 2 — Same team, real salaries',
+      detail: 'Founder $5k + Engineer/CTO $8k + Ops/CM $5k. Raises as revenue allows.',
     }
   }
   return {
-    monthly: 280000,
-    phase: 'Phase 3 — Scale',
-    detail: 'Engineering team of 8 + ops team of 6 + 12+ CMs + leadership',
+    monthly: 22000,
+    phase: 'Year 3 — Same team, market comp',
+    detail: 'Founder $6k + Engineer/CTO $10k + Ops/CM $6k. Still 3 people.',
   }
 }
 
@@ -295,7 +292,8 @@ export function simulate(a: Assumptions): MonthRow[] {
     const infra = a.infraBaseMonthly + markets.length * a.infraPerMarketMonthly
     const hc = headcountCost(m).monthly
     const launchMarketing = newMarketsThisMonth * a.marketLaunchCost
-    const fixedCosts = infra + a.insuranceMonthly + hc + launchMarketing
+    const localContractors = markets.length * a.localContractorPerMarketMonthly
+    const fixedCosts = infra + a.insuranceMonthly + hc + launchMarketing + localContractors
 
     const totalCosts = driverPayouts + stripeFees + variableCosts + fixedCosts
     const netIncome = ftchGrossRevenue - totalCosts

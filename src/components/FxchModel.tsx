@@ -85,12 +85,12 @@ export default function FxchModel() {
         </div>
 
         <h1 className="font-semibold text-4xl md:text-6xl text-zinc-50 leading-[1.05]">
-          FTCH — Financial Model
+          FTCH — Lean Financial Model
         </h1>
         <p className="mt-4 text-zinc-300 leading-relaxed text-lg md:text-xl">
-          A 36-month projection with editable assumptions. Every number is defended
-          below the model. Don&apos;t take the defaults on faith — adjust them and
-          see what breaks.
+          A 36-month projection for a <strong className="text-zinc-100">3-person team</strong>{' '}
+          (founder, engineer, ops) using 1099 contractors for local market work.
+          Every number is editable. Defaults defended below.
         </p>
 
         {/* ============================================ */}
@@ -490,9 +490,19 @@ export default function FxchModel() {
                 label="Insurance / mo"
                 value={a.insuranceMonthly}
                 min={0}
-                max={5000}
-                step={100}
+                max={3000}
+                step={50}
                 onChange={(v) => setA({ ...a, insuranceMonthly: v })}
+                unit="$"
+                prefix
+              />
+              <Slider
+                label="Local 1099 contractor / market / mo"
+                value={a.localContractorPerMarketMonthly}
+                min={0}
+                max={4000}
+                step={100}
+                onChange={(v) => setA({ ...a, localContractorPerMarketMonthly: v })}
                 unit="$"
                 prefix
               />
@@ -505,15 +515,16 @@ export default function FxchModel() {
         {/* ============================================ */}
         <section className="mt-12">
           <h2 className="font-semibold text-xl md:text-2xl text-zinc-50 mb-4">
-            Headcount cost (step function)
+            Headcount — 3 people, period
           </h2>
           <p className="text-sm text-zinc-400 mb-4 max-w-3xl">
-            Salaries are the largest line item. This is a deliberate step function —
-            you cannot run 25 markets on the Phase 1 team. These numbers assume
-            US-based comp with founders partially deferred.
+            Founder, engineer/CTO, and ops/community lead. That&apos;s the whole
+            company. Each active market hires a local 1099 contractor
+            (~10 hrs/week) to handle on-the-ground merchant and driver work — that
+            cost scales with markets, not headcount.
           </p>
-          <div className="grid md:grid-cols-2 gap-3">
-            {[1, 7, 13, 25].map((m) => {
+          <div className="grid md:grid-cols-3 gap-3">
+            {[1, 13, 25].map((m) => {
               const h = headcountCost(m)
               return (
                 <div key={m} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
@@ -528,6 +539,15 @@ export default function FxchModel() {
                 </div>
               )
             })}
+          </div>
+          <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <div className="text-zinc-100 font-medium mb-1">Per-market local 1099 contractor</div>
+            <div className="text-sm text-zinc-400 leading-relaxed">
+              {fmtUSD(a.localContractorPerMarketMonthly)}/mo per active market. Handles
+              merchant check-ins, driver recruiting, local social media, Chamber of
+              Commerce relationship. Independent contractor, not employee — keeps the
+              core team at three.
+            </div>
           </div>
         </section>
 
@@ -568,13 +588,20 @@ export default function FxchModel() {
               customer (which would hurt conversion).
             </Bullet>
             <Bullet>
-              <strong>Headcount step function</strong> — Phase 1 = 4–5 people at
-              $35k/mo cash burn, Phase 1.5 = 7 at $75k/mo, Phase 2 = 15 at $165k/mo,
-              Phase 3 = 25 at $280k/mo. Founder/CTO included at conservative comp.
+              <strong>3-person team, year over year</strong> — $13k/mo in Year 1
+              (founder $3k + engineer $6k + ops $4k, heavy equity), $18k/mo Year 2,
+              $22k/mo Year 3. No expansion of W2 headcount. All local market work
+              done by 1099 contractors.
             </Bullet>
             <Bullet>
-              <strong>$3,000 per market launch</strong> — direct mail ($2k for
-              5k-home town) + ads + branded merch + community manager onboarding.
+              <strong>$1,500/mo per market for local 1099 contractor</strong> —
+              ~10 hrs/week at $35/hr covers merchant check-ins, driver recruiting,
+              local social, Chamber relationships. Scales with markets, not company.
+            </Bullet>
+            <Bullet>
+              <strong>$1,500 per market launch</strong> — scaled-down marketing for
+              a lean operation: targeted direct mail to 1,500 homes, basic Facebook
+              ads, flyers, branded merch.
             </Bullet>
             <Bullet>
               <strong>Markets, merchants, and orders all ramp gradually</strong>{' '}
@@ -627,49 +654,60 @@ export default function FxchModel() {
           </h2>
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 space-y-4 text-zinc-300 leading-relaxed">
             <div>
-              <div className="text-zinc-100 font-medium mb-1">1. Money: {fmtUSD(summary.peakCashNeed, { compact: true })} (this scenario) + ~20% buffer</div>
+              <div className="text-zinc-100 font-medium mb-1">
+                1. Money: {fmtUSD(summary.peakCashNeed, { compact: true })} (this scenario) + ~20% buffer
+              </div>
               <p className="text-sm text-zinc-400">
-                The cumulative-cash chart bottoms at {fmtUSD(summary.peakCashNeed, { compact: true })}.
-                Real fundraising should target {fmtUSD(summary.peakCashNeed * 1.2, { compact: true })}–
-                {fmtUSD(summary.peakCashNeed * 1.5, { compact: true })} to absorb misses and dilution math.
-                The master plan&apos;s $250k–$500k seed range only works in the bull
-                case <em>and</em> with founders working unpaid.
+                Cumulative-cash chart bottoms at {fmtUSD(summary.peakCashNeed, { compact: true })}.
+                Real fundraising should target{' '}
+                {fmtUSD(summary.peakCashNeed * 1.2, { compact: true })}–
+                {fmtUSD(summary.peakCashNeed * 1.5, { compact: true })} to absorb
+                misses. With a 3-person team this is a friends-and-family / angel
+                round, not an institutional seed — most likely range is{' '}
+                {fmtUSD(Math.max(150000, summary.peakCashNeed * 1.2), { compact: true })}–
+                {fmtUSD(Math.max(500000, summary.peakCashNeed * 1.5), { compact: true })}.
               </p>
             </div>
             <div>
-              <div className="text-zinc-100 font-medium mb-1">2. Team: 4–5 to pilot, ~9 by month 9, 15+ by month 18</div>
+              <div className="text-zinc-100 font-medium mb-1">2. Team: 3 people. That&apos;s the whole company.</div>
               <p className="text-sm text-zinc-400">
-                Pilot can run on founder + CTO + tech specialist + 2 community
-                managers. By month 9 the engineering load and ops support burden
-                forces 2 more engineers + 1 ops coordinator. Phase 2 requires real
-                middle management.
+                Founder (sales + ops), engineer/CTO (everything technical), ops/community
+                lead (merchant + driver onboarding, support, marketing). Local market
+                work is 1099 contractors at ~10 hrs/week per active market. The model
+                does not work if you try to grow the W2 team — funding need triples.
               </p>
             </div>
             <div>
-              <div className="text-zinc-100 font-medium mb-1">3. Two pilot markets before raising</div>
+              <div className="text-zinc-100 font-medium mb-1">3. One pilot market for at least 6 months before market #2</div>
               <p className="text-sm text-zinc-400">
-                Get to ~4 months of live data in 2 towns. Real numbers replace this
-                model&apos;s defaults: actual orders/merchant/day, actual driver
-                acceptance, actual merchant churn. That&apos;s the only data that
-                changes the funding ask from a guess to a defended number.
+                A 3-person team cannot launch concurrently. Get one market profitable
+                or at minimum trending toward break-even before opening a second.
+                Real data from that market replaces this model&apos;s defaults.
               </p>
             </div>
             <div>
               <div className="text-zinc-100 font-medium mb-1">4. A revenue answer that isn&apos;t &quot;onboarding fees forever&quot;</div>
               <p className="text-sm text-zinc-400">
                 Per-order economics are flat-to-negative at the master plan&apos;s
-                stated splits. Either delivery fees go up, driver share goes down,
-                FTCH takes an item markup cut, or onboarding fees become recurring
-                (e.g., $29/mo SaaS layer). Pick one before launch — don&apos;t leave
-                it to discovery.
+                stated splits. Raise delivery fees, lower driver share, take an item
+                markup cut, or add a $29/mo merchant SaaS layer. Pick one before
+                launch — don&apos;t leave it to discovery.
               </p>
             </div>
             <div>
-              <div className="text-zinc-100 font-medium mb-1">5. A productized launch motion before market #3</div>
+              <div className="text-zinc-100 font-medium mb-1">5. A self-serve onboarding flow before market #3</div>
               <p className="text-sm text-zinc-400">
-                The 8-week pre-launch checklist works for 2 markets. It does not
-                work for 25. Either the playbook becomes a checklist a community
-                manager can run in 3 weeks, or the Phase 2 ramp slips by a year.
+                Three people cannot hand-hold every merchant. By the third market
+                the onboarding has to be a 30-minute self-serve flow with the local
+                contractor handling exceptions. Built once, runs everywhere.
+              </p>
+            </div>
+            <div>
+              <div className="text-zinc-100 font-medium mb-1">6. Founder cash runway separately</div>
+              <p className="text-sm text-zinc-400">
+                Year 1 founder salary in this model is $3k/mo. That&apos;s
+                subsistence, not living. Founder needs personal runway or partner
+                income for the first 12–18 months independent of the company raise.
               </p>
             </div>
           </div>
