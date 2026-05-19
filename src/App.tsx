@@ -18,10 +18,12 @@ import MedmartTraining from './components/MedmartTraining'
 import MedmartGMCPage from './components/MedmartGMCPage'
 import MedmartCriteoPage from './components/MedmartCriteoPage'
 import MedmartConfigReview from './components/MedmartConfigReview'
+import MedmartMaxReview from './components/MedmartMaxReview'
 import KloyHub from './components/KloyHub'
 import KloyProject from './components/KloyProject'
 import FxchPolc from './components/FxchPolc'
 import FxchModel from './components/FxchModel'
+import PrivacyAndTerms from './components/PrivacyAndTerms'
 import AIPage from './components/AIPage'
 import EmailsPage from './components/EmailsPage'
 import ChatWidget from './components/ChatWidget'
@@ -187,10 +189,12 @@ export default function App() {
         <Route path="/medmart/convert-gmc" element={<MedmartGMCPage />} />
         <Route path="/medmart/criteo" element={<MedmartCriteoPage />} />
         <Route path="/medmart/config-review" element={<MedmartConfigReview />} />
+        <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
         <Route path="/kloy/demo" element={<KloyHub />} />
         <Route path="/kloy/demo/:slug" element={<KloyProject />} />
         <Route path="/kloy/fxch" element={<FxchPolc />} />
         <Route path="/kloy/fxch/model" element={<FxchModel />} />
+        <Route path="/privacy-and-terms" element={<PrivacyAndTerms />} />
         <Route path="/resume" element={<Resume />} />
         <Route path="*" element={<HashRedirect />} />
       </Routes>
