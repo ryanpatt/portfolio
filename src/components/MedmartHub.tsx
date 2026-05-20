@@ -82,6 +82,24 @@ const pages: {
     ),
   },
   {
+    path: '/medmart/mckesson-logicbroker',
+    category: 'Integrations',
+    categoryColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    title: 'McKesson + Logicbroker',
+    description: 'Daily McKesson cost sync via Logicbroker, freight-aware pricing formula, and the four product-status alerts for PDP and cart.',
+    bullets: [
+      'Pricing formula: cost + $7.15 flat + $2.20/case + target margin',
+      'Status badges: Non-Stock, Out of Stock, Discontinued, Non-Returnable',
+      'Scope split — what you own vs. what gets delegated',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <path d="M9 22V12h6v10" />
+      </svg>
+    ),
+  },
+  {
     path: '/medmart/criteo',
     category: 'Integrations',
     categoryColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
