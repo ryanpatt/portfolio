@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { track, isPortfolioRoute } from '../lib/analytics'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -49,12 +50,29 @@ export default function ChatWidget() {
 
   const toggleOpen = () => {
     dismissLabel()
-    setOpen((v) => !v)
+    setOpen((v) => {
+      const next = !v
+      if (isPortfolioRoute()) {
+        track(next ? 'ai_chat_open' : 'ai_chat_close', {
+          message_count: messages.length,
+        })
+      }
+      return next
+    })
   }
 
-  const send = async (text: string) => {
+  const send = async (text: string, source: 'input' | 'suggested' = 'input') => {
     const trimmed = text.trim()
     if (!trimmed || loading) return
+
+    if (isPortfolioRoute()) {
+      track('ai_chat_message_sent', {
+        source,
+        message: trimmed.slice(0, 200),
+        message_length: trimmed.length,
+        message_index: messages.length / 2,
+      })
+    }
 
     const userMsg: Message = { role: 'user', content: trimmed }
     const nextMessages = [...messages, userMsg]
@@ -170,7 +188,7 @@ export default function ChatWidget() {
                   {SUGGESTED.map((q) => (
                     <button
                       key={q}
-                      onClick={() => send(q)}
+                      onClick={() => send(q, 'suggested')}
                       className="text-left text-xs text-muted hover:text-ink bg-card hover:bg-card-hover border border-border-subtle rounded-xl px-3 py-2 transition-colors"
                     >
                       {q}

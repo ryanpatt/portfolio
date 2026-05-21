@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { track } from '../lib/analytics'
 
 const W = 240
 const H = 140
@@ -18,6 +19,7 @@ export default function PongGame() {
     score: { l: 0, r: 0 },
   })
   const mouseYRef = useRef<number | null>(null)
+  const startedRef = useRef(false)
 
   useEffect(() => {
     activeRef.current = active
@@ -114,6 +116,11 @@ export default function PongGame() {
 
         if (s.ball.x < -BALL) {
           s.score.r += 1
+          track('pong_score', {
+            scored_by: 'player',
+            player_score: s.score.r,
+            ai_score: s.score.l,
+          })
           s.ball = {
             x: W / 2,
             y: H / 2,
@@ -123,6 +130,11 @@ export default function PongGame() {
         }
         if (s.ball.x > W) {
           s.score.l += 1
+          track('pong_score', {
+            scored_by: 'ai',
+            player_score: s.score.r,
+            ai_score: s.score.l,
+          })
           s.ball = {
             x: W / 2,
             y: H / 2,
@@ -143,7 +155,13 @@ export default function PongGame() {
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setActive(true)}
+      onMouseEnter={() => {
+        setActive(true)
+        if (!startedRef.current) {
+          startedRef.current = true
+          track('pong_start')
+        }
+      }}
       onMouseLeave={() => {
         setActive(false)
         mouseYRef.current = null

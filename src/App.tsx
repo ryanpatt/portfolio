@@ -30,6 +30,7 @@ import EmailsPage from './components/EmailsPage'
 import ChatWidget from './components/ChatWidget'
 import { navItems } from './data/content'
 import { useActiveSection } from './hooks/useActiveSection'
+import { track, describeClick } from './lib/analytics'
 
 export type NavPosition = 'left' | 'right'
 
@@ -177,9 +178,35 @@ function HashRedirect() {
   return <PortfolioLayout />
 }
 
+function RouteTracker() {
+  const location = useLocation()
+  useEffect(() => {
+    track('virtual_pageview', {
+      page_path: location.pathname + location.search,
+      page_title: document.title,
+    })
+  }, [location.pathname, location.search])
+  return null
+}
+
+function ClickTracker() {
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const info = describeClick(e.target)
+      if (!info) return
+      track('ui_click', { ...info })
+    }
+    document.addEventListener('click', handler, { capture: true })
+    return () => document.removeEventListener('click', handler, { capture: true })
+  }, [])
+  return null
+}
+
 export default function App() {
   return (
     <>
+      <RouteTracker />
+      <ClickTracker />
       <Routes>
         <Route path="/emails" element={<EmailsPage />} />
         <Route path="/ai" element={<AIPage />} />
