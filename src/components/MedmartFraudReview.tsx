@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 /* ─── types (must match api/fraud-review.ts payload) ──────────────────────── */
 
-type TabId = 'summary' | 'orders' | 'sources' | 'prevention' | 'evidence'
+type TabId = 'summary' | 'orders' | 'sources' | 'prevention' | 'evidence' | 'providers'
 type Severity = 'recoverable' | 'urgent' | 'lost' | 'info'
 type ColorKey = 'red' | 'orange' | 'gold' | 'emerald' | 'blue' | 'muted'
 
@@ -32,6 +32,14 @@ interface Report {
     }
     geoNote: string
     fraudOrders: { ord: string; d: string; st: string; email: string; ip: string; ipGeo: string; amt: string; ship: string }[]
+  }
+  providers: {
+    intro: string
+    volumeNote: string
+    comparison: { provider: string; headline: string; annual: string; note: string; tone: ColorKey }[]
+    caseForStripe: { title: string; detail: string }[]
+    considerations: string[]
+    verdict: string
   }
 }
 
@@ -170,6 +178,7 @@ export default function MedmartFraudReview() {
     { id: 'sources', label: 'Sources & IPs' },
     { id: 'prevention', label: 'Prevention' },
     { id: 'evidence', label: 'Evidence' },
+    { id: 'providers', label: 'Payment Providers' },
   ]
   const maxDecline = Math.max(...report.declineReasons.map(d => d.count), 1)
 
@@ -459,6 +468,76 @@ export default function MedmartFraudReview() {
             <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
               <h2 className="text-base font-semibold text-ink mb-3">How this was investigated</h2>
               <p className="text-sm text-muted leading-relaxed">{report.method}</p>
+            </section>
+          </div>
+        )}
+
+        {/* PAYMENT PROVIDERS */}
+        {tab === 'providers' && report.providers && (
+          <div className="space-y-6">
+            <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
+              <h2 className="text-base font-semibold text-ink mb-3">Where payments run today</h2>
+              <p className="text-sm text-muted leading-relaxed mb-3">{report.providers.intro}</p>
+              <p className="text-xs text-muted/80 leading-relaxed">{report.providers.volumeNote}</p>
+            </section>
+
+            <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
+              <h2 className="text-base font-semibold text-ink mb-1">Cost at your volume</h2>
+              <p className="text-xs text-muted mb-4">Published rates applied to ~$16.5M/yr of card volume. At list, all three are within rounding distance — the lever is the negotiated rate.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border-subtle text-xs text-muted uppercase tracking-wider text-left">
+                      <th className="py-2 pr-3 font-medium">Provider</th>
+                      <th className="py-2 pr-3 font-medium">Headline rate</th>
+                      <th className="py-2 pr-3 font-medium text-right">Est. annual</th>
+                      <th className="py-2 pr-3 font-medium">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.providers.comparison.map((r, i) => (
+                      <tr key={i} className="border-b border-border-subtle/40 align-top">
+                        <td className={`py-3 pr-3 text-xs font-semibold whitespace-nowrap ${textColor[r.tone]}`}>{r.provider}</td>
+                        <td className="py-3 pr-3 text-muted text-xs">{r.headline}</td>
+                        <td className={`py-3 pr-3 text-right font-mono text-xs whitespace-nowrap ${textColor[r.tone]}`}>{r.annual}</td>
+                        <td className="py-3 pr-3 text-muted text-xs leading-snug">{r.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="bg-gold/[0.06] border border-gold/30 rounded-xl p-6">
+              <h2 className="text-base font-semibold text-gold mb-4">The case for Stripe</h2>
+              <div className="space-y-3">
+                {report.providers.caseForStripe.map((c, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-gold/15 text-gold text-xs font-semibold flex items-center justify-center">{i + 1}</span>
+                    <div>
+                      <div className="text-sm text-ink font-medium">{c.title}</div>
+                      <div className="text-xs text-muted mt-0.5 leading-relaxed">{c.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
+              <h2 className="text-base font-semibold text-ink mb-3">What a switch involves</h2>
+              <ul className="space-y-2 text-xs text-muted">
+                {report.providers.considerations.map((c, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-border-subtle mt-0.5 shrink-0">—</span>
+                    <span className="leading-relaxed">{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-6">
+              <h2 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider mb-2">Recommendation</h2>
+              <p className="text-sm text-muted leading-relaxed">{report.providers.verdict}</p>
             </section>
           </div>
         )}

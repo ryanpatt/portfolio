@@ -184,6 +184,38 @@ const report = {
       { ord: '1000284116', d: '02-16', st: 'Chargeback', email: 'rubykcailsson@outlook.com', ip: '—', ipGeo: '—', amt: '$3,752.40', ship: 'Farmington Hills, MI' },
     ],
   },
+  providers: {
+    intro:
+      'Card payments today are spread across several providers: Authorize.Net (via the ParadoxLabs CIM module) ' +
+      'carries ~88% of card volume, with Adobe Commerce Payments (PayPal / Apple Pay / Google Pay wallets) and ' +
+      'Affirm / BNPL handling the rest. This is a recommendation to consolidate the card processing onto Stripe.',
+    volumeNote:
+      'Volume basis: ~$16.5M/yr through Authorize.Net (9,275 transactions, ~$1,814 average ticket) plus ~$1.25M/yr ' +
+      'of Adobe Commerce Payments wallet volume. Figures from production order data; cost rows use published rates.',
+    comparison: [
+      { provider: 'Authorize.Net (current)', headline: '2.9% + $0.30 + $25/mo (list)', annual: '~$491k', note: 'Gateway only — true % is set by the acquirer behind it (unknown without the statement)', tone: 'muted' },
+      { provider: 'Stripe', headline: '2.9% + $0.30, no monthly fee; interchange-plus at your volume', annual: '~$371k–$491k', note: 'Negotiable IC+ (~2.2–2.5% effective) at $16.5M/yr', tone: 'gold' },
+      { provider: 'Adobe Commerce Payments', headline: '~2.9% + $0.30, no Adobe markup', annual: '~$491k', note: 'PayPal / Braintree-backed; would replace Auth.Net too', tone: 'muted' },
+    ],
+    caseForStripe: [
+      { title: 'It directly answers the attack you just had', detail: 'Stripe Radar is machine-learning fraud scoring built into every charge — automatic card-testing detection, velocity limits, and 3-D Secure triggers. The bot wave we just blocked by hand is exactly what Radar stops automatically. Today that protection lives in Authorize.Net’s AFDS, which is under-configured.' },
+      { title: 'One provider instead of five', detail: 'Cards, Apple Pay, Google Pay, and wallets are currently split across Authorize.Net CIM + Adobe Commerce Payments + others — separate dashboards, reconciliation, and support. Stripe handles cards, Apple Pay, Google Pay, Link, and ACH in a single integration with one dashboard and one settlement.' },
+      { title: 'Competitive, negotiable pricing at your scale', detail: 'At ~$16.5M/yr you qualify for Stripe interchange-plus / custom pricing (~2.2–2.5% effective) with no monthly gateway fee. At list it matches Authorize.Net; negotiated, it can land roughly $70k–$120k/yr lower.' },
+      { title: 'Higher approval rates = more revenue', detail: 'Stripe’s network tokens and adaptive retries typically lift card authorization rates 1–2%. On $16.5M that is real recovered revenue, not just a cost line — often outweighing the rate difference entirely.' },
+      { title: 'Lower PCI scope + better disputes', detail: 'Stripe vaults the cards (shrinking your PCI footprint) and automates chargeback evidence submission. Given the chargeback trend, automated dispute handling pays for itself.' },
+    ],
+    considerations: [
+      'Card-vault migration: ~75,000 stored Authorize.Net CIM card profiles must move to Stripe via a PCI-compliant processor-to-processor transfer. Stripe supports this, but it is a coordinated project, not a config flip.',
+      'Re-integration: install and configure the official Stripe module in Adobe Commerce, test checkout across all three storefronts, and run in parallel before cutover.',
+      'Exact savings require your processing statement — until the real effective rate is known, the cost rows assume published list pricing.',
+    ],
+    verdict:
+      'Recommendation: move card processing to Stripe. At this volume the headline rate is essentially a wash, so the ' +
+      'decision rides on everything else — and there Stripe wins: built-in Radar fraud protection that directly ' +
+      'addresses the attack we just handled, consolidation of a fragmented payment stack into one provider, higher ' +
+      'authorization rates via network tokens, and negotiable interchange-plus pricing that should land at or below ' +
+      'today’s cost. The main effort is the one-time CIM card-vault migration, which Stripe is built to support.',
+  },
 }
 
 export default async function handler(request: Request): Promise<Response> {
