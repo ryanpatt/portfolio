@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 /* ─── types (must match api/fraud-review.ts payload) ──────────────────────── */
 
-type TabId = 'summary' | 'orders' | 'prevention' | 'evidence'
+type TabId = 'summary' | 'orders' | 'sources' | 'prevention' | 'evidence'
 type Severity = 'recoverable' | 'urgent' | 'lost' | 'info'
 type ColorKey = 'red' | 'orange' | 'gold' | 'emerald' | 'blue' | 'muted'
 
@@ -24,6 +24,14 @@ interface Report {
   declineReasons: { reason: string; count: number }[]
   evidenceNote: string
   method: string
+  sources: {
+    cardTesting: {
+      ip: string; host: string; attempts: number; emails: number; window: string
+      target: string; comboNote: string; sampleEmails: string[]
+    }
+    geoNote: string
+    fraudOrders: { d: string; st: string; email: string; ip: string; amt: string; ship: string }[]
+  }
 }
 
 /* ─── class maps (literals live here so Tailwind keeps them) ──────────────── */
@@ -153,6 +161,7 @@ export default function MedmartFraudReview() {
   const tabs: { id: TabId; label: string }[] = [
     { id: 'summary', label: 'Summary' },
     { id: 'orders', label: `Orders to Verify (${report.orders.length})` },
+    { id: 'sources', label: 'Sources & IPs' },
     { id: 'prevention', label: 'Prevention' },
     { id: 'evidence', label: 'Evidence' },
   ]
@@ -294,6 +303,71 @@ export default function MedmartFraudReview() {
                 <h2 className="text-base font-semibold text-blue-400">Pattern worth flagging</h2>
               </div>
               <p className="text-sm text-muted leading-relaxed">{report.patternNote}</p>
+            </section>
+          </div>
+        )}
+
+        {/* SOURCES & IPs */}
+        {tab === 'sources' && (
+          <div className="space-y-6">
+            <section className="bg-orange-500/5 border border-orange-500/30 rounded-xl p-6">
+              <h2 className="text-base font-semibold text-orange-400 mb-1">Card-testing source</h2>
+              <p className="text-xs text-muted mb-4">Where the stolen cards were tested. Essentially one address.</p>
+              <div className="grid sm:grid-cols-2 gap-3 mb-4">
+                {[
+                  ['IP address', report.sources.cardTesting.ip],
+                  ['Host', report.sources.cardTesting.host],
+                  ['Attempts', `${report.sources.cardTesting.attempts} carts`],
+                  ['Distinct emails', `${report.sources.cardTesting.emails}`],
+                  ['Active window', report.sources.cardTesting.window],
+                  ['Target product', report.sources.cardTesting.target],
+                ].map(([k, v], i) => (
+                  <div key={i} className="bg-black/20 border border-border-subtle/60 rounded p-3">
+                    <div className="text-[10px] font-semibold text-gold uppercase tracking-wider mb-1">{k}</div>
+                    <div className="text-xs text-ink font-mono break-all">{v}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-muted leading-relaxed mb-3">{report.sources.cardTesting.comboNote}</p>
+              <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">Sample emails used</div>
+              <div className="flex flex-wrap gap-2">
+                {report.sources.cardTesting.sampleEmails.map((e, i) => (
+                  <span key={i} className="text-xs font-mono text-muted bg-black/30 border border-border-subtle/60 rounded px-2 py-1 break-all">{e}</span>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
+              <h2 className="text-base font-semibold text-ink mb-1">Fraudulent orders — email, IP & destination</h2>
+              <p className="text-xs text-muted mb-4">{report.sources.geoNote}</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border-subtle text-xs text-muted uppercase tracking-wider text-left">
+                      <th className="py-2 pr-3 font-medium">Date</th>
+                      <th className="py-2 pr-3 font-medium">Type</th>
+                      <th className="py-2 pr-3 font-medium">Email used</th>
+                      <th className="py-2 pr-3 font-medium">IP</th>
+                      <th className="py-2 pr-3 font-medium text-right">Amount</th>
+                      <th className="py-2 pr-3 font-medium">Ship to</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.sources.fraudOrders.map((o, i) => (
+                      <tr key={i} className="border-b border-border-subtle/40">
+                        <td className="py-2 pr-3 text-muted font-mono text-xs whitespace-nowrap">{o.d}</td>
+                        <td className="py-2 pr-3">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${o.st === 'fraud' ? sevColors.urgent : sevColors.lost}`}>{o.st}</span>
+                        </td>
+                        <td className="py-2 pr-3 text-ink font-mono text-xs break-all">{o.email}</td>
+                        <td className="py-2 pr-3 text-muted font-mono text-xs break-all">{o.ip}</td>
+                        <td className="py-2 pr-3 text-right text-ink font-mono text-xs whitespace-nowrap">{o.amt}</td>
+                        <td className="py-2 pr-3 text-muted text-xs whitespace-nowrap">{o.ship}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           </div>
         )}
