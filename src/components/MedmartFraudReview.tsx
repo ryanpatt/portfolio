@@ -64,7 +64,7 @@ const sevLabel: Record<Severity, string> = {
   recoverable: 'Recoverable', urgent: 'Act today', lost: 'Likely lost', info: 'Watch',
 }
 
-const SESSION_KEY = 'mm_fraud_report_v2'
+const PIN_KEY = 'mm_fraud_pin'
 
 /* ─── page ───────────────────────────────────────────────────────────────── */
 
@@ -75,17 +75,30 @@ export default function MedmartFraudReview() {
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<TabId>('summary')
 
-  // Restore an already-unlocked report for this browser session (PIN is never stored).
-  useEffect(() => {
-    const cached = sessionStorage.getItem(SESSION_KEY)
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached) as Report
-        // Only trust a cache that matches the current shape; otherwise drop it and re-prompt.
-        if (parsed && parsed.sources && parsed.statCards) setReport(parsed)
-        else sessionStorage.removeItem(SESSION_KEY)
-      } catch { sessionStorage.removeItem(SESSION_KEY) }
+  // Always fetch the current server payload — never cache the report itself, so a
+  // newly added field/tab can never leave a stale shape that blanks the UI.
+  async function loadReport(p: string): Promise<boolean> {
+    const res = await fetch('/api/fraud-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: p }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      setError(data.error || 'Unable to load the report.')
+      return false
     }
+    setReport(data.report as Report)
+    return true
+  }
+
+  // On mount, if this browser session already unlocked, re-fetch fresh using the stored PIN.
+  useEffect(() => {
+    const p = sessionStorage.getItem(PIN_KEY)
+    if (!p) return
+    setLoading(true)
+    loadReport(p).catch(() => setError('Network error.')).finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function unlock(e: FormEvent) {
@@ -94,19 +107,11 @@ export default function MedmartFraudReview() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/fraud-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pin.trim() }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data.ok) {
-        setError(data.error || 'Unable to load the report.')
-        return
+      const ok = await loadReport(pin.trim())
+      if (ok) {
+        sessionStorage.setItem(PIN_KEY, pin.trim())
+        setPin('')
       }
-      setReport(data.report as Report)
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(data.report))
-      setPin('')
     } catch {
       setError('Network error. (Running locally? The /api function needs `vercel dev`, not plain `vite`.)')
     } finally {
@@ -115,9 +120,18 @@ export default function MedmartFraudReview() {
   }
 
   function lock() {
-    sessionStorage.removeItem(SESSION_KEY)
+    sessionStorage.removeItem(PIN_KEY)
     setReport(null)
     setTab('summary')
+  }
+
+  /* ── Loading (re-fetching from a stored PIN) ─────────────────────────────── */
+  if (!report && loading) {
+    return (
+      <div className="min-h-screen bg-bg text-ink font-sans flex items-center justify-center">
+        <div className="text-sm text-muted">Loading report…</div>
+      </div>
+    )
   }
 
   /* ── PIN gate ───────────────────────────────────────────────────────────── */
