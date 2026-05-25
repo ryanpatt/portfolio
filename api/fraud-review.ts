@@ -35,7 +35,7 @@ const report = {
     { label: 'Confirmed net loss — April', value: '$18,875', sub: '9 chargebacks, after $4,036 refunds', color: 'red' },
     { label: 'Charged & at risk — May',    value: '$7,818',  sub: '4 orders flagged fraud — verify', color: 'orange' },
     { label: 'Chargeback spike',           value: '9 vs ~2', sub: 'April vs monthly baseline', color: 'gold' },
-    { label: 'Bot card-tests blocked',     value: '200+',    sub: 'one source, all declined', color: 'emerald' },
+    { label: 'Bot card-tests blocked',     value: '17,000+', sub: 'one IP — now blocked at Cloudflare', color: 'emerald' },
   ],
   whatHappened: [
     'Criminals buy lists of stolen card numbers. Before using them, they "test" the cards by attempting small ' +
@@ -109,8 +109,17 @@ const report = {
     },
   ],
   preventionNote:
-    'Each item above maps to a concrete change in either the website edge (Fastly), the store admin (reCAPTCHA), ' +
-    'or the Authorize.Net dashboard. Any production change is staged and reviewed before going live.',
+    'Each item maps to a concrete change at the Cloudflare edge, in the store admin (reCAPTCHA), or in the ' +
+    'Authorize.Net dashboard. Production changes are applied carefully and are reversible.',
+  actionsTaken: {
+    asOf: '2026-05-25',
+    items: [
+      { status: 'done', text: 'Blocked the attacker IP (94.72.160.10) at the Cloudflare edge — the layer that actually sees the real client IP.' },
+      { status: 'done', text: 'Repaired the Cloudflare checkout rate-limit rule: it now issues a Managed Challenge to any IP exceeding 20 order-submits/minute on the payment endpoint. It had been scoped to a checkout path the bot never used, so it never fired.' },
+      { status: 'progress', text: 'Google reCAPTCHA on checkout — being enabled as the complementary in-app layer.' },
+      { status: 'note', text: 'Architecture finding: traffic flows Cloudflare → Fastly → store. An earlier block placed at Fastly was ineffective because Fastly only sees Cloudflare’s IPs — edge blocking must be done at Cloudflare.' },
+    ],
+  },
   attacker: [
     ['Source', 'One data-center address — 94.72.160.10, Dallas TX (Hivelocity / HostVenom), flagged DATACENTER. Not a real shopper.'],
     ['Activity', '208 fake carts using 143 throwaway emails, Feb 7 → May 25.'],
@@ -137,9 +146,9 @@ const report = {
     cardTesting: {
       ip: '94.72.160.10',
       host: 'Dallas, TX data center — Hivelocity / HostVenom (rDNS static.hvvc.us), flagged DATACENTER, not a home connection',
-      attempts: 208,
-      emails: 143,
-      window: 'Feb 7 – May 25, 2026',
+      attempts: 17030,
+      emails: 4106,
+      window: 'Feb 7 → May 25, 2026 — major surge May 24–25 (~4,900 attempts/hour at peak)',
       target: 'agf-101 — TENS electrodes (~$25), hit 126 times',
       comboNote:
         'The 143 emails are real, varied addresses across many providers (gmail, yahoo, business and school ' +

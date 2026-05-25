@@ -21,6 +21,7 @@ interface Report {
   patternNote: string
   prevention: { when: string; tone: 'red' | 'orange' | 'emerald'; items: { title: string; detail: string }[] }[]
   preventionNote: string
+  actionsTaken?: { asOf: string; items: { status: 'done' | 'progress' | 'note'; text: string }[] }
   attacker: [string, string][]
   declineReasons: { reason: string; count: number }[]
   evidenceNote: string
@@ -427,6 +428,22 @@ export default function MedmartFraudReview() {
         {/* PREVENTION */}
         {tab === 'prevention' && (
           <div className="space-y-5">
+            {report.actionsTaken && (
+              <section className="bg-emerald-500/[0.06] border border-emerald-500/30 rounded-xl p-6">
+                <h2 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider mb-3">Actions taken · {report.actionsTaken.asOf}</h2>
+                <div className="space-y-2.5">
+                  {report.actionsTaken.items.map((a, i) => {
+                    const m = { done: ['✓', 'text-emerald-400'], progress: ['◔', 'text-yellow-400'], note: ['ℹ', 'text-blue-400'] }[a.status]
+                    return (
+                      <div key={i} className="flex items-start gap-3">
+                        <span className={`shrink-0 mt-0.5 text-sm font-bold ${m[1]}`}>{m[0]}</span>
+                        <span className="text-sm text-muted leading-relaxed">{a.text}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
             {report.prevention.map((tier, i) => (
               <section key={i} className={`border rounded-xl p-6 ${tierTone[tier.tone]}`}>
                 <h2 className="text-sm font-semibold text-ink uppercase tracking-wider mb-4">{tier.when}</h2>
