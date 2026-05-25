@@ -107,7 +107,7 @@ const report = {
     'Each item above maps to a concrete change in either the website edge (Fastly), the store admin (reCAPTCHA), ' +
     'or the Authorize.Net dashboard. Any production change is staged and reviewed before going live.',
   attacker: [
-    ['Source', 'One data-center address — 94.72.160.10 (HostVenom). Not a real shopper.'],
+    ['Source', 'One data-center address — 94.72.160.10, Dallas TX (Hivelocity / HostVenom), flagged DATACENTER. Not a real shopper.'],
     ['Activity', '208 fake carts using 143 throwaway emails, Feb 7 → May 25.'],
     ['Target', 'One cheap product (~$25 TENS electrodes) hit 126 times — the test item.'],
     ['Result', '0 completed orders from this address — every card it tested was declined.'],
@@ -131,7 +131,7 @@ const report = {
   sources: {
     cardTesting: {
       ip: '94.72.160.10',
-      host: '94-72-160-10.static.hvvc.us — HostVenom, a US data center (not a home connection)',
+      host: 'Dallas, TX data center — Hivelocity / HostVenom (rDNS static.hvvc.us), flagged DATACENTER, not a home connection',
       attempts: 208,
       emails: 143,
       window: 'Feb 7 – May 25, 2026',
@@ -146,36 +146,37 @@ const report = {
       ],
     },
     geoNote:
-      'Shipping destinations for the successful fraud are spread across the US (TX, OH, LA, PA, AZ, FL, CA, SC, ' +
-      'NH, NM, WA, VA, NC, NJ, MO, MA, NY, MI) — typical of cards drawn from a shared stolen list. Only two orders ' +
-      'cluster (both May, both Los Angeles). The card-testing bot itself runs from a single US data-center address. ' +
-      'IP-origin geolocation was deliberately not sent to any external service to keep customer IPs in-house.',
+      'Geolocation shows a sharp contrast. The card-testing bot runs from a Dallas data center (Hivelocity) — ' +
+      'clearly automated. The successful fraudulent orders, by contrast, came from ordinary residential and mobile ' +
+      'ISPs (Comcast, Verizon, AT&T, Charter, T-Mobile…) scattered across ~18 states, and most geolocate near their ' +
+      'own shipping address. That makes the cash-out orders look like normal local shoppers — which is why they ' +
+      'slipped past while the bot was being blocked. (IP origins via ip-api.com.)',
     fraudOrders: [
-      { d: '05-24', st: 'fraud', email: 'duhon1troy@gmail.com', ip: '139.55.36.159', amt: '$1,164.88', ship: 'Munday, TX' },
-      { d: '05-23', st: 'fraud', email: 'Jackal4078@yahoo.com', ip: '74.218.150.58', amt: '$849.65', ship: 'Ravenna, OH' },
-      { d: '05-22', st: 'fraud', email: 'chelleboudwin@yahoo.com', ip: '12.75.115.88', amt: '$662.26', ship: 'Larose, LA' },
-      { d: '05-22', st: 'fraud', email: 'chelleboudwin@yahoo.com', ip: '12.75.115.88', amt: '$662.26', ship: 'Larose, LA (dup)' },
-      { d: '05-21', st: 'fraud', email: 'zaltsmani14@gmail.com', ip: '24.144.224.45', amt: '$1,235.90', ship: 'Butler, PA' },
-      { d: '05-20', st: 'fraud', email: 'sherhol14@outlook.com', ip: '134.228.218.116', amt: '$617.95', ship: 'Toledo, OH' },
-      { d: '05-08', st: 'fraud', email: 'grebnaiki@outlook.com', ip: '38.188.128.38', amt: '$1,311.49', ship: 'Surprise, AZ' },
-      { d: '05-07', st: 'fraud', email: 'miapia1577@gmail.com', ip: '2600:1006:b1a7…', amt: '$3,022.02', ship: 'Tallahassee, FL' },
-      { d: '05-05', st: 'fraud', email: 'levonagasian@gmail.com', ip: '174.255.221.75', amt: '$3,140.84', ship: 'Los Angeles, CA' },
-      { d: '05-04', st: 'fraud', email: 'hayktovmasyan92@gmail.com', ip: '174.255.164.78', amt: '$2,747.98', ship: 'Los Angeles, CA' },
-      { d: '04-29', st: 'Chargeback', email: 'rldook@yahoo.com', ip: '—', amt: '$2,362.70', ship: 'Bennettsville, SC' },
-      { d: '04-27', st: 'Chargeback', email: '157RoseMarie@gmail.com', ip: '64.222.98.170', amt: '$1,698.47', ship: 'Bedford, NH' },
-      { d: '04-24', st: 'Chargeback', email: 'foundyller@pm.me', ip: '2600:387:15…', amt: '$1,259.10', ship: 'Naples, FL' },
-      { d: '04-20', st: 'Chargeback', email: 'Julisa.caraballo@gmail.com', ip: '2607:fb90:cb0b…', amt: '$1,779.81', ship: 'Anthony, NM' },
-      { d: '04-17', st: 'Chargeback', email: 'myhamsc1994@gmail.com', ip: '2601:640:cb80…', amt: '$1,204.54', ship: 'Vacaville, CA' },
-      { d: '04-09', st: 'Chargeback', email: 'ndobbins4556@gmail.com', ip: '—', amt: '$6,458.67', ship: 'Pebble Beach, CA' },
-      { d: '04-08', st: 'Chargeback', email: 'mariam@safesidehomes.com', ip: '—', amt: '$4,036.99', ship: 'Renton, WA' },
-      { d: '04-06', st: 'Chargeback', email: 'ronmassey02@gmail.com', ip: '2600:8805:538b…', amt: '$3,346.64', ship: 'Providence Forge, VA' },
-      { d: '04-03', st: 'Chargeback', email: 'dsfs4542@sbcglobal.net', ip: '35.39.117.10', amt: '$764.12', ship: 'Folsom, CA' },
-      { d: '03-31', st: 'Chargeback', email: 'faithhhar_ss@outlook.com', ip: '69.248.162.61', amt: '$4,118.97', ship: 'Dunn, NC' },
-      { d: '03-28', st: 'Chargeback', email: 'taillefern758@gmail.com', ip: '2601:8c:4c80…', amt: '$738.51', ship: 'Linden, NJ' },
-      { d: '03-20', st: 'Chargeback', email: 'dmzemann@hotmail.com', ip: '104.237.102.169', amt: '$8,205.66', ship: 'Linn, MO' },
-      { d: '02-20', st: 'Chargeback', email: 'dsmerrymacs@verizon.net', ip: '—', amt: '$2,897.57', ship: 'Peabody, MA' },
-      { d: '02-18', st: 'Chargeback', email: 'darshanassociates2016@gmail.com', ip: '2600:4808:98b4…', amt: '$1,011.46', ship: 'Glen Head, NY' },
-      { d: '02-16', st: 'Chargeback', email: 'rubykcailsson@outlook.com', ip: '—', amt: '$3,752.40', ship: 'Farmington Hills, MI' },
+      { d: '05-24', st: 'fraud', email: 'duhon1troy@gmail.com', ip: '139.55.36.159', ipGeo: 'Abilene, TX · Windstream', amt: '$1,164.88', ship: 'Munday, TX' },
+      { d: '05-23', st: 'fraud', email: 'Jackal4078@yahoo.com', ip: '74.218.150.58', ipGeo: 'Lexington, KY · Charter', amt: '$849.65', ship: 'Ravenna, OH' },
+      { d: '05-22', st: 'fraud', email: 'chelleboudwin@yahoo.com', ip: '12.75.115.88', ipGeo: 'Baton Rouge, LA · AT&T mobile', amt: '$662.26', ship: 'Larose, LA' },
+      { d: '05-22', st: 'fraud', email: 'chelleboudwin@yahoo.com', ip: '12.75.115.88', ipGeo: 'Baton Rouge, LA · AT&T mobile', amt: '$662.26', ship: 'Larose, LA (dup)' },
+      { d: '05-21', st: 'fraud', email: 'zaltsmani14@gmail.com', ip: '24.144.224.45', ipGeo: 'Slippery Rock, PA · Armstrong', amt: '$1,235.90', ship: 'Butler, PA' },
+      { d: '05-20', st: 'fraud', email: 'sherhol14@outlook.com', ip: '134.228.218.116', ipGeo: 'Toledo, OH · Buckeye', amt: '$617.95', ship: 'Toledo, OH' },
+      { d: '05-08', st: 'fraud', email: 'grebnaiki@outlook.com', ip: '38.188.128.38', ipGeo: 'Surprise, AZ · Wyyerd', amt: '$1,311.49', ship: 'Surprise, AZ' },
+      { d: '05-07', st: 'fraud', email: 'miapia1577@gmail.com', ip: '2600:1006:b1a7…', ipGeo: 'Orlando, FL · Verizon mobile', amt: '$3,022.02', ship: 'Tallahassee, FL' },
+      { d: '05-05', st: 'fraud', email: 'levonagasian@gmail.com', ip: '174.255.221.75', ipGeo: 'Littleton, CO · Verizon mobile', amt: '$3,140.84', ship: 'Los Angeles, CA' },
+      { d: '05-04', st: 'fraud', email: 'hayktovmasyan92@gmail.com', ip: '174.255.164.78', ipGeo: 'Hillsboro, OR · Verizon mobile', amt: '$2,747.98', ship: 'Los Angeles, CA' },
+      { d: '04-29', st: 'Chargeback', email: 'rldook@yahoo.com', ip: '—', ipGeo: '—', amt: '$2,362.70', ship: 'Bennettsville, SC' },
+      { d: '04-27', st: 'Chargeback', email: '157RoseMarie@gmail.com', ip: '64.222.98.170', ipGeo: 'Biddeford, ME · Consolidated', amt: '$1,698.47', ship: 'Bedford, NH' },
+      { d: '04-24', st: 'Chargeback', email: 'foundyller@pm.me', ip: '2600:387:15…', ipGeo: 'Country Club, FL · AT&T mobile', amt: '$1,259.10', ship: 'Naples, FL' },
+      { d: '04-20', st: 'Chargeback', email: 'Julisa.caraballo@gmail.com', ip: '2607:fb90:cb0b…', ipGeo: 'El Paso, TX · T-Mobile', amt: '$1,779.81', ship: 'Anthony, NM' },
+      { d: '04-17', st: 'Chargeback', email: 'myhamsc1994@gmail.com', ip: '2601:640:cb80…', ipGeo: 'Vacaville, CA · Comcast', amt: '$1,204.54', ship: 'Vacaville, CA' },
+      { d: '04-09', st: 'Chargeback', email: 'ndobbins4556@gmail.com', ip: '—', ipGeo: '—', amt: '$6,458.67', ship: 'Pebble Beach, CA' },
+      { d: '04-08', st: 'Chargeback', email: 'mariam@safesidehomes.com', ip: '—', ipGeo: '—', amt: '$4,036.99', ship: 'Renton, WA' },
+      { d: '04-06', st: 'Chargeback', email: 'ronmassey02@gmail.com', ip: '2600:8805:538b…', ipGeo: 'IPv6 (not resolved)', amt: '$3,346.64', ship: 'Providence Forge, VA' },
+      { d: '04-03', st: 'Chargeback', email: 'dsfs4542@sbcglobal.net', ip: '35.39.117.10', ipGeo: 'San Jose, CA · Boost mobile', amt: '$764.12', ship: 'Folsom, CA' },
+      { d: '03-31', st: 'Chargeback', email: 'faithhhar_ss@outlook.com', ip: '69.248.162.61', ipGeo: 'Bloomfield, NJ · Comcast', amt: '$4,118.97', ship: 'Dunn, NC' },
+      { d: '03-28', st: 'Chargeback', email: 'taillefern758@gmail.com', ip: '2601:8c:4c80…', ipGeo: 'Rahway, NJ · Comcast', amt: '$738.51', ship: 'Linden, NJ' },
+      { d: '03-20', st: 'Chargeback', email: 'dmzemann@hotmail.com', ip: '104.237.102.169', ipGeo: 'Linn, MO · RadioWire', amt: '$8,205.66', ship: 'Linn, MO' },
+      { d: '02-20', st: 'Chargeback', email: 'dsmerrymacs@verizon.net', ip: '—', ipGeo: '—', amt: '$2,897.57', ship: 'Peabody, MA' },
+      { d: '02-18', st: 'Chargeback', email: 'darshanassociates2016@gmail.com', ip: '2600:4808:98b4…', ipGeo: 'Glen Head, NY · Cablevision', amt: '$1,011.46', ship: 'Glen Head, NY' },
+      { d: '02-16', st: 'Chargeback', email: 'rubykcailsson@outlook.com', ip: '—', ipGeo: '—', amt: '$3,752.40', ship: 'Farmington Hills, MI' },
     ],
   },
 }

@@ -30,7 +30,7 @@ interface Report {
       target: string; comboNote: string; sampleEmails: string[]
     }
     geoNote: string
-    fraudOrders: { d: string; st: string; email: string; ip: string; amt: string; ship: string }[]
+    fraudOrders: { d: string; st: string; email: string; ip: string; ipGeo: string; amt: string; ship: string }[]
   }
 }
 
@@ -348,6 +348,7 @@ export default function MedmartFraudReview() {
                       <th className="py-2 pr-3 font-medium">Type</th>
                       <th className="py-2 pr-3 font-medium">Email used</th>
                       <th className="py-2 pr-3 font-medium">IP</th>
+                      <th className="py-2 pr-3 font-medium">IP location · ISP</th>
                       <th className="py-2 pr-3 font-medium text-right">Amount</th>
                       <th className="py-2 pr-3 font-medium">Ship to</th>
                     </tr>
@@ -361,6 +362,7 @@ export default function MedmartFraudReview() {
                         </td>
                         <td className="py-2 pr-3 text-ink font-mono text-xs break-all">{o.email}</td>
                         <td className="py-2 pr-3 text-muted font-mono text-xs break-all">{o.ip}</td>
+                        <td className="py-2 pr-3 text-muted text-xs whitespace-nowrap">{o.ipGeo}</td>
                         <td className="py-2 pr-3 text-right text-ink font-mono text-xs whitespace-nowrap">{o.amt}</td>
                         <td className="py-2 pr-3 text-muted text-xs whitespace-nowrap">{o.ship}</td>
                       </tr>
