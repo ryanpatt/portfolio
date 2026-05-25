@@ -14,6 +14,7 @@ interface Report {
   whatHappened: string[]
   money: { period: string; what: string; amount: string; tone: ColorKey }[]
   moneyNote: string
+  moneyOrders: { aprilChargebacks: string[]; mayFraud: string[]; mayCaptured: string[] }
   priorities: [string, string][]
   orders: { order: string; amount: string; shipTo: string; state: string; action: string; sev: Severity }[]
   ordersNote: string
@@ -30,7 +31,7 @@ interface Report {
       target: string; comboNote: string; sampleEmails: string[]
     }
     geoNote: string
-    fraudOrders: { d: string; st: string; email: string; ip: string; ipGeo: string; amt: string; ship: string }[]
+    fraudOrders: { ord: string; d: string; st: string; email: string; ip: string; ipGeo: string; amt: string; ship: string }[]
   }
 }
 
@@ -55,7 +56,7 @@ const sevLabel: Record<Severity, string> = {
   recoverable: 'Recoverable', urgent: 'Act today', lost: 'Likely lost', info: 'Watch',
 }
 
-const SESSION_KEY = 'mm_fraud_report'
+const SESSION_KEY = 'mm_fraud_report_v2'
 
 /* ─── page ───────────────────────────────────────────────────────────────── */
 
@@ -70,7 +71,12 @@ export default function MedmartFraudReview() {
   useEffect(() => {
     const cached = sessionStorage.getItem(SESSION_KEY)
     if (cached) {
-      try { setReport(JSON.parse(cached) as Report) } catch { sessionStorage.removeItem(SESSION_KEY) }
+      try {
+        const parsed = JSON.parse(cached) as Report
+        // Only trust a cache that matches the current shape; otherwise drop it and re-prompt.
+        if (parsed && parsed.sources && parsed.statCards) setReport(parsed)
+        else sessionStorage.removeItem(SESSION_KEY)
+      } catch { sessionStorage.removeItem(SESSION_KEY) }
     }
   }, [])
 
@@ -255,6 +261,25 @@ export default function MedmartFraudReview() {
                 </table>
               </div>
               <p className="text-xs text-muted mt-4 leading-relaxed">{report.moneyNote}</p>
+
+              <div className="mt-5 pt-4 border-t border-border-subtle/60 space-y-3">
+                <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">Backing order numbers</div>
+                {[
+                  { label: `April chargebacks (${report.moneyOrders.aprilChargebacks.length})`, list: report.moneyOrders.aprilChargebacks },
+                  { label: `May fraud-flagged (${report.moneyOrders.mayFraud.length})`, list: report.moneyOrders.mayFraud },
+                  { label: `↳ of which charged (${report.moneyOrders.mayCaptured.length})`, list: report.moneyOrders.mayCaptured },
+                ].map((g, i) => (
+                  <div key={i}>
+                    <div className="text-xs text-ink mb-1">{g.label}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.list.map(o => (
+                        <span key={o} className="text-[11px] font-mono text-muted bg-black/30 border border-border-subtle/60 rounded px-1.5 py-0.5">{o}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[11px] text-muted/80 leading-relaxed">Every order is itemized with date, amount, email, IP and destination on the Sources &amp; IPs tab.</p>
+              </div>
             </section>
 
             <section className="bg-white/[0.02] border border-border-subtle rounded-xl p-6">
@@ -308,7 +333,7 @@ export default function MedmartFraudReview() {
         )}
 
         {/* SOURCES & IPs */}
-        {tab === 'sources' && (
+        {tab === 'sources' && report.sources && (
           <div className="space-y-6">
             <section className="bg-orange-500/5 border border-orange-500/30 rounded-xl p-6">
               <h2 className="text-base font-semibold text-orange-400 mb-1">Card-testing source</h2>
@@ -344,6 +369,7 @@ export default function MedmartFraudReview() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border-subtle text-xs text-muted uppercase tracking-wider text-left">
+                      <th className="py-2 pr-3 font-medium">Order #</th>
                       <th className="py-2 pr-3 font-medium">Date</th>
                       <th className="py-2 pr-3 font-medium">Type</th>
                       <th className="py-2 pr-3 font-medium">Email used</th>
@@ -356,6 +382,7 @@ export default function MedmartFraudReview() {
                   <tbody>
                     {report.sources.fraudOrders.map((o, i) => (
                       <tr key={i} className="border-b border-border-subtle/40">
+                        <td className="py-2 pr-3 text-ink font-mono text-xs whitespace-nowrap">{o.ord}</td>
                         <td className="py-2 pr-3 text-muted font-mono text-xs whitespace-nowrap">{o.d}</td>
                         <td className="py-2 pr-3">
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${o.st === 'fraud' ? sevColors.urgent : sevColors.lost}`}>{o.st}</span>
