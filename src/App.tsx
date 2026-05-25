@@ -19,6 +19,7 @@ import MedmartGMCPage from './components/MedmartGMCPage'
 import MedmartCriteoPage from './components/MedmartCriteoPage'
 import MedmartConfigReview from './components/MedmartConfigReview'
 import MedmartMaxReview from './components/MedmartMaxReview'
+import MedmartFraudReview from './components/MedmartFraudReview'
 import MedmartMckessonLogicbroker from './components/MedmartMckessonLogicbroker'
 import KloyHub from './components/KloyHub'
 import KloyProject from './components/KloyProject'
@@ -218,6 +219,7 @@ export default function App() {
         <Route path="/medmart/criteo" element={<MedmartCriteoPage />} />
         <Route path="/medmart/config-review" element={<MedmartConfigReview />} />
         <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
+        <Route path="/medmart/fraud-review" element={<MedmartFraudReview />} />
         <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
         <Route path="/kloy/demo" element={<KloyHub />} />
         <Route path="/kloy/demo/:slug" element={<KloyProject />} />
