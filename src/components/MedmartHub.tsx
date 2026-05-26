@@ -137,6 +137,24 @@ const pages: {
       </svg>
     ),
   },
+  {
+    path: '/medmart/cloudflare-review',
+    category: 'Security',
+    categoryColor: 'bg-red-500/10 text-red-400 border-red-500/20',
+    title: 'Cloudflare Security Review',
+    description: 'Read-only posture review of the three MedMart Cloudflare zones — proxy topology, bot & geo controls, WAF/rate-limit config, and the account Attack Surface Report.',
+    bullets: [
+      'Managed WAF available but not deployed (1 Critical) + permissive Super Bot Fight Mode',
+      '"Outside US/CA" managed-challenge, ASN/scanner blocks, card-testing rate limits in place',
+      '52 attack-surface issues triaged; traffic-volume pending an analytics read scope',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
 ]
 
 export default function MedmartHub() {

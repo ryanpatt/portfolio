@@ -18,6 +18,7 @@ import MedmartTraining from './components/MedmartTraining'
 import MedmartGMCPage from './components/MedmartGMCPage'
 import MedmartCriteoPage from './components/MedmartCriteoPage'
 import MedmartConfigReview from './components/MedmartConfigReview'
+import MedmartCloudflareReview from './components/MedmartCloudflareReview'
 import MedmartMaxReview from './components/MedmartMaxReview'
 import MedmartFraudReview from './components/MedmartFraudReview'
 import MedmartMckessonLogicbroker from './components/MedmartMckessonLogicbroker'
@@ -218,6 +219,7 @@ export default function App() {
         <Route path="/medmart/convert-gmc" element={<MedmartGMCPage />} />
         <Route path="/medmart/criteo" element={<MedmartCriteoPage />} />
         <Route path="/medmart/config-review" element={<MedmartConfigReview />} />
+        <Route path="/medmart/cloudflare-review" element={<MedmartCloudflareReview />} />
         <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
         <Route path="/medmart/fraud-review" element={<MedmartFraudReview />} />
         <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
