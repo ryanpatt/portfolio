@@ -1,0 +1,44 @@
+name: MedMart Dev Sprint report
+
+# Twice daily at 8:00 AM and 6:00 PM US Eastern, year-round (DST-proof).
+# GitHub cron is UTC, so we fire at all four candidate UTC hours and let the
+# job decide — only the run that lands on 08:xx or 18:xx Eastern actually sends.
+on:
+  schedule:
+    - cron: '0 12 * * *'   # 08:00 EDT
+    - cron: '0 13 * * *'   # 08:00 EST
+    - cron: '0 22 * * *'   # 18:00 EDT
+    - cron: '0 23 * * *'   # 18:00 EST
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'Force a run (am or pm)'
+        required: false
+        default: 'am'
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Eastern slot
+        id: slot
+        run: |
+          HOUR=$(TZ=America/New_York date +%H)
+          if [ -n "${{ github.event.inputs.slot }}" ]; then
+            echo "slot=${{ github.event.inputs.slot }}" >> "$GITHUB_OUTPUT"
+          elif [ "$HOUR" = "08" ]; then
+            echo "slot=am" >> "$GITHUB_OUTPUT"
+          elif [ "$HOUR" = "18" ]; then
+            echo "slot=pm" >> "$GITHUB_OUTPUT"
+          else
+            echo "slot=" >> "$GITHUB_OUTPUT"
+            echo "Eastern hour $HOUR is not a send window — skipping."
+          fi
+      - name: Fire report
+        if: steps.slot.outputs.slot != ''
+        run: |
+          code=$(curl -sS -o /tmp/resp.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://ryanpatt.com/api/sprint-report?slot=${{ steps.slot.outputs.slot }}")
+          echo "HTTP $code"; cat /tmp/resp.json
+          [ "$code" = "200" ] || exit 1
