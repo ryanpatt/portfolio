@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 /* ─── types (must match api/authnet-review.ts payload) ────────────────────── */
 
-type TabId = 'summary' | 'evidence' | 'declines' | 'fix'
+type TabId = 'summary' | 'evidence' | 'declines' | 'avs' | 'fix'
 type Tone = 'red' | 'orange' | 'gold' | 'emerald' | 'blue' | 'muted'
 
 interface Report {
@@ -23,6 +23,17 @@ interface Report {
   fixPrimary: string[]
   fixWorkaround: string
   checklist: { q: string; a: string }[]
+  addressCheck: {
+    question: string
+    verdict: string
+    answer: string
+    sampleBillTo: [string, string][]
+    emptyFieldCounts: { field: string; empty: number }[]
+    avsCodes: { code: string; label: string; meaning: string; tone: Tone }[]
+    why: string
+    proof: string
+    confirm: string
+  }
 }
 
 /* ─── class maps (literals live here so Tailwind keeps them) ──────────────── */
@@ -159,6 +170,7 @@ export default function MedmartAuthnetReview() {
     { id: 'summary', label: 'Summary' },
     { id: 'evidence', label: 'Evidence' },
     { id: 'declines', label: `Declines (${report.declines.length})` },
+    { id: 'avs', label: 'Address & AVS' },
     { id: 'fix', label: 'Fix' },
   ]
   const maxBar = Math.max(...report.validationTrend.map(d => d.approved + d.declined), 1)
@@ -345,6 +357,84 @@ export default function MedmartAuthnetReview() {
             <div className="bg-blue-500/[0.04] border border-blue-500/20 rounded-xl p-4">
               <h3 className="text-sm font-semibold text-ink mb-1.5">Backend-only? No.</h3>
               <p className="text-xs text-muted leading-relaxed">{report.channelNote}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Address & AVS ── */}
+        {tab === 'avs' && (
+          <div className="space-y-6">
+            {/* Q&A headline */}
+            <div className="bg-white/[0.02] border border-border-subtle rounded-xl p-5">
+              <p className="text-xs text-muted mb-1">The question</p>
+              <h3 className="text-base font-semibold text-ink mb-3">{report.addressCheck.question}</h3>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-2xl font-display font-bold text-emerald-400">{report.addressCheck.verdict}</span>
+                <span className="text-xs text-muted">Short answer</span>
+              </div>
+              <p className="text-sm text-muted leading-relaxed">{report.addressCheck.answer}</p>
+            </div>
+
+            {/* Proof: the actual data + empty-field counts */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white/[0.02] border border-border-subtle rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-ink mb-1">What we actually send</h4>
+                <p className="text-xs text-muted mb-3">One real request pulled from the production payment log:</p>
+                <div className="bg-black/30 border border-border-subtle rounded-lg p-3 space-y-1">
+                  {report.addressCheck.sampleBillTo.map(([k, v], i) => (
+                    <div key={i} className="flex justify-between gap-3 text-xs">
+                      <span className="text-muted/70">{k}</span>
+                      <span className="text-ink font-medium text-right">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white/[0.02] border border-border-subtle rounded-xl p-5">
+                <h4 className="text-sm font-semibold text-ink mb-1">Blank fields across all of today's orders</h4>
+                <p className="text-xs text-muted mb-3">If the address weren't being sent, these would be non-zero:</p>
+                <div className="space-y-2">
+                  {report.addressCheck.emptyFieldCounts.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-muted">{f.field}</span>
+                      <span className="text-emerald-400 font-medium tabular-nums">{f.empty} blank</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* The crux: what the AVS letter means */}
+            <div className="bg-white/[0.02] border border-border-subtle rounded-xl p-5">
+              <h4 className="text-sm font-semibold text-ink mb-1">The key to all of this: what the AVS result means</h4>
+              <p className="text-xs text-muted mb-4">
+                AVS is the bank's address check. The letter the bank returns is what decides this — and “U” does
+                <span className="text-ink font-medium"> not</span> mean we forgot to send an address.
+              </p>
+              <div className="space-y-2">
+                {report.addressCheck.avsCodes.map((a, i) => (
+                  <div key={i} className="flex gap-3 bg-black/20 border border-border-subtle rounded-lg p-3">
+                    <span className={`shrink-0 w-7 h-7 rounded flex items-center justify-center font-display font-bold text-sm ${textColor[a.tone]} bg-white/[0.04]`}>{a.code}</span>
+                    <div>
+                      <div className={`text-sm font-medium ${textColor[a.tone]}`}>{a.label}</div>
+                      <div className="text-xs text-muted leading-relaxed mt-0.5">{a.meaning}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Why / proof / confirm */}
+            <div className="bg-orange-500/[0.04] border border-orange-500/20 rounded-xl p-5">
+              <h4 className="text-sm font-semibold text-ink mb-2">Why every decline shows “U”</h4>
+              <p className="text-sm text-muted leading-relaxed">{report.addressCheck.why}</p>
+            </div>
+            <div className="bg-white/[0.02] border border-border-subtle rounded-xl p-5">
+              <h4 className="text-sm font-semibold text-ink mb-2">Proof the address handling didn't change</h4>
+              <p className="text-sm text-muted leading-relaxed">{report.addressCheck.proof}</p>
+            </div>
+            <div className="bg-emerald-500/[0.04] border border-emerald-500/20 rounded-xl p-5">
+              <h4 className="text-sm font-semibold text-ink mb-2">How to confirm in 2 minutes</h4>
+              <p className="text-sm text-muted leading-relaxed">{report.addressCheck.confirm}</p>
             </div>
           </div>
         )}

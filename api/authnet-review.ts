@@ -133,6 +133,52 @@ const report = {
     { q: 'cURL / TLS from the server', a: 'Healthy — HTTP 200, TLS 1.2, valid *.authorize.net cert.' },
     { q: 'Recent checkout / firewall / server / extension changes', a: 'No code deploy since May 20; connectivity fine. The change is account-side fraud settings at Authorize.Net.' },
   ],
+
+  // Answers the natural follow-up: "is checkout failing because the order/admin isn't
+  // sending the address?" Short answer: no — proven from the raw request payloads.
+  addressCheck: {
+    question: 'Is checkout failing because the order (or a rep’s admin order) isn’t sending the billing address correctly?',
+    verdict: 'No.',
+    answer:
+      'The complete billing address is sent to Authorize.Net on every single transaction, and Authorize.Net echoes ' +
+      'it straight back. This is not an address-data problem — so it is not something a developer needs to “fix” in ' +
+      'the order or admin code.',
+    // A real request payload pulled from the production payment log (var/log/tokenbase.log).
+    sampleBillTo: [
+      ['First name', 'Anthony'],
+      ['Last name', 'Valle'],
+      ['Street', '20 Fortune Cookie Ln'],
+      ['City', 'Hampton Bays'],
+      ['State', 'NY'],
+      ['ZIP', '11946'],
+      ['Country', 'US'],
+    ],
+    // Count of blank address fields across ALL of today's requests.
+    emptyFieldCounts: [
+      { field: 'First name', empty: 0 },
+      { field: 'Last name', empty: 0 },
+      { field: 'Street address', empty: 0 },
+      { field: 'City', empty: 0 },
+      { field: 'ZIP', empty: 0 },
+    ],
+    // The crux: what the AVS letter actually means.
+    avsCodes: [
+      { code: 'U', label: 'Unavailable', meaning: 'The bank did NOT run an address check. Standard on a $0.00 validation auth. This is what we get on every decline.', tone: 'orange' as const },
+      { code: 'N', label: 'No match', meaning: 'An address WAS sent but does not match the bank’s records. We never see this — which we would if the address were wrong or missing.', tone: 'muted' as const },
+      { code: 'Y', label: 'Match', meaning: 'Address sent and matches the bank. Seen on real-dollar auths.', tone: 'emerald' as const },
+    ],
+    why:
+      'When a new card is entered, the module first runs a $0.00 “validate this card” authorization. Most banks ' +
+      'don’t perform address verification on a zero-dollar auth, so they return U (“unavailable”) no matter how ' +
+      'perfect the address is. The account is now set to reject U — so every one of these gets declined.',
+    proof:
+      'On May 24 the exact same flow returned a mix of Y (match), N, R and U, with approvals — and no code has ' +
+      'deployed since May 20. The address handling has not changed. What changed is that U is now being rejected.',
+    confirm:
+      'Want it nailed down? Run one real-dollar auth with a correct billing ZIP. It will come back AVS Y/match and ' +
+      'approve — proving the address flows correctly and only the $0-auth “U” path is being killed. (A real auth ' +
+      'also shows up in Transaction Search, unlike the $0 validations.)',
+  },
 }
 
 export default async function handler(request: Request): Promise<Response> {
