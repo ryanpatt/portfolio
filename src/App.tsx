@@ -17,6 +17,7 @@ import MedmartAIDemo from './components/MedmartAIDemo'
 import MedmartTraining from './components/MedmartTraining'
 import MedmartGMCPage from './components/MedmartGMCPage'
 import MedmartCriteoPage from './components/MedmartCriteoPage'
+import MedmartCriteoCtmWalkthrough from './components/MedmartCriteoCtmWalkthrough'
 import MedmartConfigReview from './components/MedmartConfigReview'
 import MedmartCloudflareReview from './components/MedmartCloudflareReview'
 import MedmartMaxReview from './components/MedmartMaxReview'
@@ -219,6 +220,7 @@ export default function App() {
         <Route path="/medmart/training" element={<MedmartTraining />} />
         <Route path="/medmart/convert-gmc" element={<MedmartGMCPage />} />
         <Route path="/medmart/criteo" element={<MedmartCriteoPage />} />
+        <Route path="/medmart/criteo-ctm-walkthrough" element={<MedmartCriteoCtmWalkthrough />} />
         <Route path="/medmart/config-review" element={<MedmartConfigReview />} />
         <Route path="/medmart/cloudflare-review" element={<MedmartCloudflareReview />} />
         <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
