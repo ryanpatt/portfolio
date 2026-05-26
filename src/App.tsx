@@ -22,6 +22,7 @@ import MedmartConfigReview from './components/MedmartConfigReview'
 import MedmartCloudflareReview from './components/MedmartCloudflareReview'
 import MedmartMaxReview from './components/MedmartMaxReview'
 import MedmartFraudReview from './components/MedmartFraudReview'
+import MedmartAuthnetReview from './components/MedmartAuthnetReview'
 import MedmartMckessonLogicbroker from './components/MedmartMckessonLogicbroker'
 import KloyHub from './components/KloyHub'
 import KloyProject from './components/KloyProject'
@@ -225,6 +226,7 @@ export default function App() {
         <Route path="/medmart/cloudflare-review" element={<MedmartCloudflareReview />} />
         <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
         <Route path="/medmart/fraud-review" element={<MedmartFraudReview />} />
+        <Route path="/medmart/authnet-review" element={<MedmartAuthnetReview />} />
         <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
         <Route path="/kloy/demo" element={<KloyHub />} />
         <Route path="/kloy/demo/:slug" element={<KloyProject />} />
