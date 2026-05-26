@@ -11,7 +11,7 @@
 //   REPORT_FROM   verified ElasticEmail sender (default below)
 //   STALE_BASE_DAYS (default 2)   SP_GRACE_MIN (default 4)
 
-export const config = { runtime: 'nodejs' }
+export const config = { runtime: 'edge' }
 
 const BOARD = '18413273901'
 const BOARD_URL = `https://medmart-company.monday.com/boards/${BOARD}`
