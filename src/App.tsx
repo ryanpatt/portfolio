@@ -27,6 +27,7 @@ import KloyProject from './components/KloyProject'
 import FxchPolc from './components/FxchPolc'
 import FxchModel from './components/FxchModel'
 import PrivacyAndTerms from './components/PrivacyAndTerms'
+import JtownLaunchPrep from './components/JtownLaunchPrep'
 import AIPage from './components/AIPage'
 import EmailsPage from './components/EmailsPage'
 import ChatWidget from './components/ChatWidget'
@@ -227,6 +228,7 @@ export default function App() {
         <Route path="/kloy/demo/:slug" element={<KloyProject />} />
         <Route path="/kloy/fxch" element={<FxchPolc />} />
         <Route path="/kloy/fxch/model" element={<FxchModel />} />
+        <Route path="/jtowncafe/launch-prep" element={<JtownLaunchPrep />} />
         <Route path="/privacy-and-terms" element={<PrivacyAndTerms />} />
         <Route path="/resume" element={<Resume />} />
         <Route path="*" element={<HashRedirect />} />
