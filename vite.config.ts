@@ -7,6 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // Don't let the SPA navigate-fallback hijack the hosted invoice/payment pages.
+        navigateFallbackDenylist: [/^\/jamestowncafe\//],
+      },
       manifest: {
         name: 'Ryan Patt — Portfolio',
         short_name: 'Ryan Patt',
