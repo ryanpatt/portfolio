@@ -292,14 +292,14 @@ export default function MedmartPdpDemo() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans text-[17px] leading-relaxed antialiased selection:bg-emerald-200">
+    <div className="min-h-screen bg-white text-slate-900 font-sans text-[17px] leading-relaxed antialiased selection:bg-[#c1e6ef]">
       {/* ── announcement / trust bar ─────────────────────────────────────── */}
-      <div className="bg-slate-900 text-slate-100 text-[14px]">
+      <div className="bg-[#1c3251] text-slate-100 text-[14px]">
         <div className="mx-auto max-w-6xl px-5 sm:px-8 py-2.5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-center">
-          <span className="inline-flex items-center gap-2"><Icon d={I.truck} className="w-4 h-4 text-emerald-400" /> Free shipping</span>
-          <span className="inline-flex items-center gap-2"><Icon d={I.shield} className="w-4 h-4 text-emerald-400" /> HSA / FSA eligible</span>
-          <span className="hidden sm:inline-flex items-center gap-2"><Icon d={I.heart} className="w-4 h-4 text-emerald-400" /> Trusted for 30 years</span>
-          <a href={PHONE_HREF} className="inline-flex items-center gap-2 font-semibold text-white hover:text-emerald-300">
+          <span className="inline-flex items-center gap-2"><Icon d={I.truck} className="w-4 h-4 text-[#28a9f5]" /> Free shipping</span>
+          <span className="inline-flex items-center gap-2"><Icon d={I.shield} className="w-4 h-4 text-[#28a9f5]" /> HSA / FSA eligible</span>
+          <span className="hidden sm:inline-flex items-center gap-2"><Icon d={I.heart} className="w-4 h-4 text-[#28a9f5]" /> Trusted for 30 years</span>
+          <a href={PHONE_HREF} className="inline-flex items-center gap-2 font-semibold text-white hover:text-[#5ec0f8]">
             <Icon d={I.phone} className="w-4 h-4" /> {PHONE}
           </a>
         </div>
@@ -309,10 +309,10 @@ export default function MedmartPdpDemo() {
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200">
         <div className="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between">
           <span className="font-display text-xl font-extrabold tracking-tight">
-            Med<span className="text-emerald-600">Mart</span>
+            Med<span className="text-[#0076bc]">Mart</span>
           </span>
           <a href={PHONE_HREF}
-            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-[15px] font-semibold text-white hover:bg-emerald-700 transition-colors">
+            className="inline-flex items-center gap-2 rounded-full bg-[#0076bc] px-4 py-2 text-[15px] font-semibold text-white hover:bg-[#28a9f5] transition-colors">
             <Icon d={I.phone} className="w-4 h-4" /> <span className="hidden sm:inline">Call to order</span> {PHONE}
           </a>
         </div>
@@ -321,7 +321,7 @@ export default function MedmartPdpDemo() {
       {/* ── HERO / buy box ───────────────────────────────────────────────── */}
       <Section className="pt-8 sm:pt-12 pb-10">
         <nav className="text-[14px] text-slate-500 mb-5">
-          <Link to="/medmart" className="hover:text-emerald-700">MedMart</Link>
+          <Link to="/medmart" className="hover:text-[#0076bc]">MedMart</Link>
           <span className="px-2">/</span> Mobility Scooters
           <span className="px-2">/</span>
           <span className="text-slate-700">Buzzaround XL+</span>
@@ -331,7 +331,7 @@ export default function MedmartPdpDemo() {
           {/* visual */}
           <div className="lg:sticky lg:top-24">
             <div className="relative rounded-3xl bg-gradient-to-br from-slate-50 to-slate-100 ring-1 ring-slate-200 p-6 sm:p-10 overflow-hidden">
-              <span className="absolute left-5 top-5 rounded-full bg-rose-600 text-white text-[13px] font-bold px-3 py-1 shadow-sm">
+              <span className="absolute left-5 top-5 rounded-full bg-[#da2f2b] text-white text-[13px] font-bold px-3 py-1 shadow-sm">
                 Save {fmt(savings)} · {pctOff}% off
               </span>
               <ScooterSVG color={color} />
@@ -339,7 +339,7 @@ export default function MedmartPdpDemo() {
               <div className="mt-4 flex flex-wrap gap-2 justify-center">
                 {[['4.7 mph', I.bolt], ['18 mi range', I.battery], ['325 lb capacity', I.shield]].map(([label, d]) => (
                   <span key={label} className="inline-flex items-center gap-1.5 rounded-full bg-white ring-1 ring-slate-200 px-3 py-1.5 text-[14px] font-medium text-slate-700">
-                    <Icon d={d} className="w-4 h-4 text-emerald-600" /> {label}
+                    <Icon d={d} className="w-4 h-4 text-[#0076bc]" /> {label}
                   </span>
                 ))}
               </div>
@@ -348,7 +348,7 @@ export default function MedmartPdpDemo() {
 
           {/* details + buy box */}
           <div ref={buyRef}>
-            <p className="text-[15px] font-semibold uppercase tracking-wide text-emerald-700">Golden Technologies</p>
+            <p className="text-[15px] font-semibold uppercase tracking-wide text-[#0076bc]">Golden Technologies</p>
             <h1 className="mt-1 font-display text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
               Buzzaround XL+ Portable HD 4-Wheel Mobility Scooter
             </h1>
@@ -367,7 +367,7 @@ export default function MedmartPdpDemo() {
             <div className="mt-6 flex flex-wrap items-end gap-x-4 gap-y-1">
               <span className="text-4xl font-extrabold text-slate-900">{fmt(total)}</span>
               <span className="text-xl text-slate-400 line-through">{fmt(LIST_PRICE)}</span>
-              <span className="rounded-md bg-rose-50 text-rose-700 font-semibold text-[15px] px-2 py-0.5">
+              <span className="rounded-md bg-[#fcebeb] text-[#b81e1b] font-semibold text-[15px] px-2 py-0.5">
                 You save {fmt(savings)}
               </span>
             </div>
@@ -396,15 +396,15 @@ export default function MedmartPdpDemo() {
             <fieldset className="mt-6">
               <legend className="text-[15px] font-semibold mb-2">Battery range</legend>
               <div className="grid sm:grid-cols-2 gap-3">
-                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${!extendedBattery ? 'border-emerald-600 bg-emerald-50/60 ring-1 ring-emerald-600' : 'border-slate-200 hover:border-slate-300'}`}>
-                  <input type="radio" name="battery" className="mt-1 accent-emerald-600 w-5 h-5" checked={!extendedBattery} onChange={() => setExtendedBattery(false)} />
+                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${!extendedBattery ? 'border-[#0076bc] bg-[#eef7fd]/60 ring-1 ring-[#0076bc]' : 'border-slate-200 hover:border-slate-300'}`}>
+                  <input type="radio" name="battery" className="mt-1 accent-[#0076bc] w-5 h-5" checked={!extendedBattery} onChange={() => setExtendedBattery(false)} />
                   <span>
                     <span className="block font-semibold">Standard · 9.2 mi</span>
                     <span className="block text-[14px] text-slate-500">Included</span>
                   </span>
                 </label>
-                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${extendedBattery ? 'border-emerald-600 bg-emerald-50/60 ring-1 ring-emerald-600' : 'border-slate-200 hover:border-slate-300'}`}>
-                  <input type="radio" name="battery" className="mt-1 accent-emerald-600 w-5 h-5" checked={extendedBattery} onChange={() => setExtendedBattery(true)} />
+                <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${extendedBattery ? 'border-[#0076bc] bg-[#eef7fd]/60 ring-1 ring-[#0076bc]' : 'border-slate-200 hover:border-slate-300'}`}>
+                  <input type="radio" name="battery" className="mt-1 accent-[#0076bc] w-5 h-5" checked={extendedBattery} onChange={() => setExtendedBattery(true)} />
                   <span>
                     <span className="block font-semibold">Extended · up to 18 mi</span>
                     <span className="block text-[14px] text-slate-500">+{fmt(BATTERY_UPGRADE)}</span>
@@ -419,7 +419,7 @@ export default function MedmartPdpDemo() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {PLANS.map((p) => (
                   <button key={p.id} onClick={() => setPlan(p.id)} aria-pressed={plan === p.id}
-                    className={`rounded-xl border p-2.5 text-left transition ${plan === p.id ? 'border-emerald-600 bg-emerald-50/60 ring-1 ring-emerald-600' : 'border-slate-200 hover:border-slate-300'}`}>
+                    className={`rounded-xl border p-2.5 text-left transition ${plan === p.id ? 'border-[#0076bc] bg-[#eef7fd]/60 ring-1 ring-[#0076bc]' : 'border-slate-200 hover:border-slate-300'}`}>
                     <span className="block text-[14px] font-semibold leading-tight">{p.label}</span>
                     <span className="block text-[13px] text-slate-500">{p.price ? '+' + fmt(p.price) : '—'}</span>
                   </button>
@@ -430,12 +430,12 @@ export default function MedmartPdpDemo() {
             {/* CTAs */}
             <div className="mt-7 flex flex-col gap-3">
               <button onClick={addToCart}
-                className="group inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-white text-[19px] font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 active:scale-[0.99] transition">
+                className="group inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#0076bc] text-white text-[19px] font-bold shadow-lg shadow-[#0076bc]/20 hover:bg-[#28a9f5] active:scale-[0.99] transition">
                 Add to Cart — {fmt(total)}
                 <Icon d={I.arrow} className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
               </button>
               <a href={PHONE_HREF}
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-slate-300 text-[18px] font-semibold text-slate-800 hover:border-emerald-600 hover:text-emerald-700 transition">
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-slate-300 text-[18px] font-semibold text-slate-800 hover:border-[#0076bc] hover:text-[#0076bc] transition">
                 <Icon d={I.phone} className="w-5 h-5" /> Prefer to call? {PHONE}
               </a>
             </div>
@@ -449,7 +449,7 @@ export default function MedmartPdpDemo() {
                 'Real people answer the phone',
               ].map((t) => (
                 <li key={t} className="flex items-center gap-2.5 text-slate-700">
-                  <span className="grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                  <span className="grid place-items-center w-6 h-6 rounded-full bg-[#e1f1fb] text-[#0076bc] shrink-0">
                     <Icon d={I.check} className="w-4 h-4" />
                   </span>
                   {t}
@@ -471,7 +471,7 @@ export default function MedmartPdpDemo() {
               [I.bolt, 'Lifts into your trunk', 'Comes apart into light pieces; the heaviest is just 42.5 lbs.'],
             ].map(([d, h, p]) => (
               <div key={h} className="rounded-2xl bg-white p-6 ring-1 ring-slate-200">
-                <span className="grid place-items-center w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700">
+                <span className="grid place-items-center w-12 h-12 rounded-xl bg-[#e1f1fb] text-[#0076bc]">
                   <Icon d={d} className="w-7 h-7" />
                 </span>
                 <h3 className="mt-4 font-display text-lg font-bold">{h}</h3>
@@ -514,7 +514,7 @@ export default function MedmartPdpDemo() {
                   [I.bolt, '60+ LED accent colors', 'Personalize your ride and stay visible day or night.'],
                 ].map(([d, h, p]) => (
                   <li key={h} className="flex gap-4">
-                    <span className="grid place-items-center w-11 h-11 rounded-xl bg-white ring-1 ring-slate-200 text-emerald-700 shrink-0">
+                    <span className="grid place-items-center w-11 h-11 rounded-xl bg-white ring-1 ring-slate-200 text-[#0076bc] shrink-0">
                       <Icon d={d} className="w-6 h-6" />
                     </span>
                     <span>
@@ -536,12 +536,12 @@ export default function MedmartPdpDemo() {
                   'Full owner\'s manual and support line',
                 ].map((t) => (
                   <li key={t} className="flex items-start gap-2.5">
-                    <Icon d={I.check} className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+                    <Icon d={I.check} className="w-5 h-5 text-[#0076bc] mt-0.5 shrink-0" />
                     <span className="text-slate-700">{t}</span>
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-[14px] text-emerald-900">
+              <div className="mt-6 rounded-xl bg-[#eef7fd] p-4 text-[14px] text-[#0b3a5c]">
                 <strong>HSA / FSA eligible.</strong> Use pre-tax dollars and pay over time with Affirm or PayPal.
               </div>
             </div>
@@ -602,7 +602,7 @@ export default function MedmartPdpDemo() {
       </Section>
 
       {/* ── final CTA band ───────────────────────────────────────────────── */}
-      <div className="bg-slate-900 text-white">
+      <div className="bg-[#1c3251] text-white">
         <Section className="py-14 text-center">
           <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight">Ready to get moving again?</h2>
           <p className="mt-3 text-slate-300 text-lg max-w-xl mx-auto">
@@ -610,7 +610,7 @@ export default function MedmartPdpDemo() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <button onClick={addToCart}
-              className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-8 text-[19px] font-bold text-slate-900 hover:bg-emerald-400 transition">
+              className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#28a9f5] px-8 text-[19px] font-bold text-[#08233f] hover:bg-[#5ec0f8] transition">
               Add to Cart <Icon d={I.arrow} className="w-5 h-5" />
             </button>
             <a href={PHONE_HREF}
@@ -626,7 +626,7 @@ export default function MedmartPdpDemo() {
         <p className="max-w-xl mx-auto px-5">
           Demo concept by Ryan Patt — not affiliated with a live MedMart cart. Product data &amp; photos from medmartonline.com for demonstration only.
         </p>
-        <Link to="/medmart" className="mt-3 inline-flex items-center gap-1.5 font-medium text-emerald-700 hover:text-emerald-800">
+        <Link to="/medmart" className="mt-3 inline-flex items-center gap-1.5 font-medium text-[#0076bc] hover:text-[#005a8f]">
           ← Back to MedMart hub
         </Link>
       </footer>
@@ -647,7 +647,7 @@ export default function MedmartPdpDemo() {
               <Icon d={I.phone} className="w-5 h-5" />
             </a>
             <button onClick={addToCart}
-              className="flex-1 sm:flex-none inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-[17px] font-bold text-white hover:bg-emerald-700 transition">
+              className="flex-1 sm:flex-none inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0076bc] px-6 text-[17px] font-bold text-white hover:bg-[#28a9f5] transition">
               Add to Cart
             </button>
           </div>
@@ -657,8 +657,8 @@ export default function MedmartPdpDemo() {
       {/* ── toast ────────────────────────────────────────────────────────── */}
       <div aria-live="polite" className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
         {toast && (
-          <div className="flex items-center gap-2.5 rounded-full bg-slate-900 text-white px-5 py-3 shadow-xl text-[15px] font-medium">
-            <span className="grid place-items-center w-6 h-6 rounded-full bg-emerald-500"><Icon d={I.check} className="w-4 h-4 text-white" /></span>
+          <div className="flex items-center gap-2.5 rounded-full bg-[#1c3251] text-white px-5 py-3 shadow-xl text-[15px] font-medium">
+            <span className="grid place-items-center w-6 h-6 rounded-full bg-[#0076bc]"><Icon d={I.check} className="w-4 h-4 text-white" /></span>
             {toast}
           </div>
         )}
