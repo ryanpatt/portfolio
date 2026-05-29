@@ -10,6 +10,24 @@ const pages: {
   icon: React.ReactNode
 }[] = [
   {
+    path: '/medmart/pdp-demo',
+    category: 'Concept',
+    categoryColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    title: 'PDP Conversion Demo',
+    description: 'A reimagined product page for the Golden Technologies Buzzaround XL+ — conversion-first, tuned for a senior + caregiver audience, and built to score 95+ on Lighthouse.',
+    bullets: [
+      'Interactive color picker + live price configurator (battery, service plan)',
+      'Inline-SVG hero for instant LCP; real photos lazy-loaded with zero CLS',
+      'Sticky buy bar, Affirm monthly estimate, trust signals, FAQ',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="3" y="4" width="18" height="14" rx="2" />
+        <path d="M3 9h18M8 18v3M16 18v3M7 21h10" />
+      </svg>
+    ),
+  },
+  {
     path: '/medmart/demo',
     category: 'Security',
     categoryColor: 'bg-red-500/10 text-red-400 border-red-500/20',
