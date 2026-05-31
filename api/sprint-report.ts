@@ -220,10 +220,9 @@ function render(r: ReturnType<typeof buildReport>) {
   return { subject, html, text: lines.join('\n') }
 }
 
-async function sendEmail(to: string[], subject: string, html: string, text: string) {
+async function sendEmail(to: string[], subject: string, html: string, text: string, from: string) {
   const apiKey = process.env.ELASTICEMAIL_API_KEY
   if (!apiKey) throw new Error('ELASTICEMAIL_API_KEY not configured')
-  const from = process.env.REPORT_FROM || 'MedMart Reports <reports@ryanpatt.email>'
   const body = {
     Recipients: to.map(Email => ({ Email })),
     Content: {
@@ -255,6 +254,12 @@ export default async function handler(request: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
   }
   try {
+    // Diagnostic: list validated ElasticEmail sender domains.
+    if (url.searchParams.get('action') === 'domains') {
+      const apiKey = process.env.ELASTICEMAIL_API_KEY || ''
+      const res = await fetch('https://api.elasticemail.com/v4/domains', { headers: { 'X-ElasticEmail-ApiKey': apiKey } })
+      return new Response(await res.text(), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+    }
     // The GitHub Actions caller passes slot=am|pm after doing its own ET gating.
     // Fallback guard (if called without a slot): only proceed at 8am / 6pm ET.
     const now = new Date()
@@ -275,11 +280,12 @@ export default async function handler(request: Request): Promise<Response> {
     const to = (toParam || process.env.REPORT_TO ||
       'rpatt@medmart.com,dlykins@medmart.com,dfesman@medmart.com').split(',').map(s => s.trim()).filter(Boolean)
 
+    const fromAddr = url.searchParams.get('from') || process.env.REPORT_FROM || 'MedMart Reports <noreply@ryanpatt.email>'
     if (url.searchParams.get('dry') === '1') {
-      return new Response(JSON.stringify({ subject, to, text }, null, 2), { headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ subject, from: fromAddr, to, text }, null, 2), { headers: { 'Content-Type': 'application/json' } })
     }
-    const result = await sendEmail(to, subject, html, text)
-    return new Response(JSON.stringify({ sent: true, to, subject, ee: result }), { headers: { 'Content-Type': 'application/json' } })
+    const result = await sendEmail(to, subject, html, text, fromAddr)
+    return new Response(JSON.stringify({ sent: true, from: fromAddr, to, subject, ee: result }), { headers: { 'Content-Type': 'application/json' } })
   } catch (e: any) {
     return new Response(JSON.stringify({ error: String(e?.message || e) }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }

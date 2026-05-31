@@ -22,6 +22,7 @@ const MedmartMaxReview = lazy(() => import('./components/MedmartMaxReview'))
 const MedmartFraudReview = lazy(() => import('./components/MedmartFraudReview'))
 const MedmartTestBotsFollowup = lazy(() => import('./components/MedmartTestBotsFollowup'))
 const MedmartTeamManagement = lazy(() => import('./components/MedmartTeamManagement'))
+const MedmartAuthnetReview = lazy(() => import('./components/MedmartAuthnetReview'))
 const MedmartMckessonLogicbroker = lazy(() => import('./components/MedmartMckessonLogicbroker'))
 const MedmartPdpDemo = lazy(() => import('./components/MedmartPdpDemo'))
 const MedmartDevOps = lazy(() => import('./components/MedmartDevOps'))
@@ -33,6 +34,7 @@ const KloyProject = lazy(() => import('./components/KloyProject'))
 const FxchPolc = lazy(() => import('./components/FxchPolc'))
 const FxchModel = lazy(() => import('./components/FxchModel'))
 const PrivacyAndTerms = lazy(() => import('./components/PrivacyAndTerms'))
+const JtownLaunchPrep = lazy(() => import('./components/JtownLaunchPrep'))
 const AIPage = lazy(() => import('./components/AIPage'))
 const EmailsPage = lazy(() => import('./components/EmailsPage'))
 
@@ -82,6 +84,7 @@ export default function App() {
           <Route path="/medmart/fraud-review" element={<MedmartFraudReview />} />
           <Route path="/medmart/testbots-followup" element={<MedmartTestBotsFollowup />} />
           <Route path="/medmart/team-management" element={<MedmartTeamManagement />} />
+          <Route path="/medmart/authnet-review" element={<MedmartAuthnetReview />} />
           <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
           <Route path="/medmart/pdp-demo" element={<MedmartPdpDemo />} />
           <Route path="/medmart/roadmap2026" element={<MedmartRoadmap2026 />} />
@@ -92,6 +95,7 @@ export default function App() {
           <Route path="/kloy/demo/:slug" element={<KloyProject />} />
           <Route path="/kloy/fxch" element={<FxchPolc />} />
           <Route path="/kloy/fxch/model" element={<FxchModel />} />
+          <Route path="/jtowncafe/launch-prep" element={<JtownLaunchPrep />} />
           <Route path="/privacy-and-terms" element={<PrivacyAndTerms />} />
           <Route path="/resume" element={<Resume />} />
           <Route path="*" element={<PortfolioLayout />} />
