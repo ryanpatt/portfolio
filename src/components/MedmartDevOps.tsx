@@ -21,7 +21,33 @@ const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'hardening',        label: 'Target hardening' },
 ]
 
+/* ─── shared primitives ───────────────────────────────────────────────────── */
+
+function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div className={`rounded-xl border border-border-subtle bg-card p-5 ${className}`}>{children}</div>
+}
+
+function Pill({ children, tone = 'gold' }: { children: React.ReactNode; tone?: 'gold' | 'sky' | 'emerald' | 'red' | 'muted' }) {
+  const tones: Record<string, string> = {
+    gold:    'bg-gold/10 text-gold border-gold/25',
+    sky:     'bg-sky-500/10 text-sky-400 border-sky-500/25',
+    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+    red:     'bg-red-500/10 text-red-400 border-red-500/25',
+    muted:   'bg-white/5 text-muted border-border-subtle',
+  }
+  return <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs ${tones[tone]}`}>{children}</span>
+}
+
+const WHY_BULLETS: { title: string; detail: string }[] = [
+  { title: 'Nothing breaks production by surprise', detail: 'Every change passes CI and a review, gets QA on a prod-like environment, and is deployed deliberately by one owner — not pushed ad hoc.' },
+  { title: 'A new dev ships on day one', detail: 'The path from ticket to live is written down: same branch names, same gates, same deploy steps every time.' },
+  { title: 'The unreleased Supply store stays isolated', detail: 'Long-lived work lives on its own branch + environment, so weekly releases to the live store are never blocked or contaminated by it.' },
+  { title: 'Every change is auditable', detail: 'Conventional commits + ticket references + tagged releases mean you can answer "what shipped, when, and why" in seconds.' },
+  { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
+]
+
 export default function MedmartDevOps() {
+  void Pill // temporary: keeps the build green until Pill is used in a later task
   const [active, setActive] = useState<SectionId>('why')
 
   useEffect(() => {
@@ -70,7 +96,24 @@ export default function MedmartDevOps() {
         </nav>
 
         <main className="min-w-0 flex-1 space-y-16">
-          {SECTIONS.map((s) => (
+          <section id="why" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Why this matters</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              A pipeline is not bureaucracy — it is what lets a small team move fast without breaking the live
+              store. Five things this one buys you:
+            </p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {WHY_BULLETS.map((b) => (
+                <Card key={b.title}>
+                  <h3 className="font-display text-base text-gold">{b.title}</h3>
+                  <p className="mt-1.5 text-sm text-muted">{b.detail}</p>
+                </Card>
+              ))}
+            </div>
+          </section>
+
+          {/* placeholders — replaced in later tasks */}
+          {SECTIONS.filter((s) => s.id !== 'why').map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-10">
               <h2 className="font-display text-2xl text-ink">{s.label}</h2>
               <p className="mt-2 text-muted">Section content — built in later tasks.</p>
