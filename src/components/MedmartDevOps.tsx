@@ -59,6 +59,20 @@ const WHY_BULLETS: { title: string; detail: string }[] = [
   { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
 ]
 
+const ONBOARDING: string[] = [
+  'GitHub access to Med-mart/mmr-web-m2.',
+  'SSH key registered on Magento Cloud (for the magento remote).',
+  'Warden local environment running; auth.json credentials in place.',
+  'Conventions internalized: branch off production, MM-<id>-<slug>, Conventional Commits.',
+  'Bookmark this runbook.',
+]
+const HARDENING: { title: string; detail: string }[] = [
+  { title: 'Branch protection', detail: 'Require CI green + ≥1 review on production and staging; restrict who can push production.' },
+  { title: 'Refresh CODEOWNERS', detail: 'Point reviews at the current team — the prior external @swiftotter/mmr-architects group is defunct.' },
+  { title: 'Realign the ticket validator', detail: 'Confirm the commit-message check targets the real tracker (Monday.com) rather than Jira.' },
+  { title: 'Confirm the Integration env', detail: 'Verify the development Cloud environment is active and sized to host the Supply store.' },
+]
+
 const DEPLOY_STEPS: string[] = [
   'Merge the PR on GitHub — nothing happens on Cloud yet (no GitHub→Cloud integration).',
   'Release Owner pushes the branch to the Cloud git remote (triggers build + deploy).',
@@ -404,13 +418,26 @@ export default function MedmartDevOps() {
             </div>
           </section>
 
-          {/* placeholders — replaced in later tasks */}
-          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching' && s.id !== 'lifecycle' && s.id !== 'ci' && s.id !== 'environments' && s.id !== 'deploy' && s.id !== 'hotfix-rollback').map((s) => (
-            <section key={s.id} id={s.id} className="scroll-mt-10">
-              <h2 className="font-display text-2xl text-ink">{s.label}</h2>
-              <p className="mt-2 text-muted">Section content — built in later tasks.</p>
-            </section>
-          ))}
+          <section id="onboarding" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Onboarding</h2>
+            <p className="mt-2 max-w-2xl text-muted">What a new developer needs before their first PR.</p>
+            <Card className="mt-5"><Steps items={ONBOARDING} /></Card>
+          </section>
+
+          <section id="hardening" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Target hardening</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              Recommendations to schedule — <span className="text-ink">not changes made by this document</span>.
+            </p>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {HARDENING.map((h) => (
+                <Card key={h.title}>
+                  <h3 className="font-display text-base text-gold">{h.title}</h3>
+                  <p className="mt-1.5 text-sm text-muted">{h.detail}</p>
+                </Card>
+              ))}
+            </div>
+          </section>
         </main>
       </div>
     </div>
