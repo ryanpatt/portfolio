@@ -46,6 +46,20 @@ const WHY_BULLETS: { title: string; detail: string }[] = [
   { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
 ]
 
+const CI_GATES: { gate: string; catches: string; local: string; fix: string }[] = [
+  { gate: 'Commit message (ticket)', catches: 'Commits not tied to a tracked ticket', local: '—', fix: 'Reference the ticket id in the commit/PR' },
+  { gate: 'Conventional Commits',    catches: 'Non-conventional commit subjects',     local: 'follow type(scope): subject', fix: 'Reword/squash to feat:, fix:, etc.' },
+  { gate: 'PHPCS (changed lines)',   catches: 'Magento coding-standard violations',   local: 'vendor/bin/phpcs --standard=phpcs.xml <files>', fix: 'Auto-fix with phpcbf where possible' },
+  { gate: 'PHPStan',                 catches: 'Static-analysis errors (after di:compile)', local: 'bin/magento setup:di:compile && vendor/bin/phpstan', fix: 'Fix the reported type/usage issues' },
+]
+
+const ENVIRONMENTS: { name: string; branch: string; cloud: string; purpose: string; deployer: string }[] = [
+  { name: 'Local',       branch: 'feature branch', cloud: 'Warden (local)', purpose: 'build / verify',          deployer: 'Developer' },
+  { name: 'Staging',     branch: 'staging',        cloud: 'Staging',        purpose: 'release-candidate QA',     deployer: 'Release Owner' },
+  { name: 'Production',  branch: 'production',      cloud: 'Production',     purpose: 'live store',               deployer: 'Release Owner' },
+  { name: 'Integration', branch: 'mm-supply',      cloud: 'Development',     purpose: 'incubate Supply store',    deployer: 'Developer / Release Owner' },
+]
+
 const LIFECYCLE: { n: number; key: string; title: string; detail: string; cmd?: string }[] = [
   { n: 1, key: 'ticket',  title: 'Ticket',  detail: 'Start from a Monday.com Dev Sprint item. The ticket id becomes the branch prefix.' },
   { n: 2, key: 'branch',  title: 'Branch',  detail: 'Cut a feature branch off the latest production (default lane).', cmd: 'git fetch origin && git switch -c MM-123-short-slug origin/production' },
@@ -273,8 +287,69 @@ export default function MedmartDevOps() {
             <div className="mt-5"><LifecycleStrip /></div>
           </section>
 
+          <section id="ci" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">CI gates</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              Every PR runs four checks on self-hosted runners (Warden PHP 8.2 image). Green is required to merge.
+            </p>
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-left text-muted">
+                    <th className="py-2 pr-4 font-medium">Gate</th>
+                    <th className="py-2 pr-4 font-medium">Catches</th>
+                    <th className="py-2 pr-4 font-medium">Run locally</th>
+                    <th className="py-2 font-medium">Fix</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CI_GATES.map((g) => (
+                    <tr key={g.gate} className="border-b border-border-subtle/50 align-top">
+                      <td className="py-2.5 pr-4 text-ink">{g.gate}</td>
+                      <td className="py-2.5 pr-4 text-muted">{g.catches}</td>
+                      <td className="py-2.5 pr-4"><code className="text-xs text-emerald-300">{g.local}</code></td>
+                      <td className="py-2.5 text-muted">{g.fix}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-xs text-muted">
+              Hardening note: the ticket validator currently targets a Jira integration — confirm it points at the team's
+              actual tracker (Monday.com) or realign it.
+            </p>
+          </section>
+
+          <section id="environments" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Environments</h2>
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-left text-muted">
+                    <th className="py-2 pr-4 font-medium">Environment</th>
+                    <th className="py-2 pr-4 font-medium">Branch</th>
+                    <th className="py-2 pr-4 font-medium">Cloud env</th>
+                    <th className="py-2 pr-4 font-medium">Purpose</th>
+                    <th className="py-2 font-medium">Who deploys</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ENVIRONMENTS.map((e) => (
+                    <tr key={e.name} className="border-b border-border-subtle/50">
+                      <td className="py-2.5 pr-4 text-ink">{e.name}</td>
+                      <td className="py-2.5 pr-4"><code className="text-xs text-gold">{e.branch}</code></td>
+                      <td className="py-2.5 pr-4 text-muted">{e.cloud}</td>
+                      <td className="py-2.5 pr-4 text-muted">{e.purpose}</td>
+                      <td className="py-2.5 text-muted">{e.deployer}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           {/* placeholders — replaced in later tasks */}
-          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching' && s.id !== 'lifecycle').map((s) => (
+          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching' && s.id !== 'lifecycle' && s.id !== 'ci' && s.id !== 'environments').map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-10">
               <h2 className="font-display text-2xl text-ink">{s.label}</h2>
               <p className="mt-2 text-muted">Section content — built in later tasks.</p>
