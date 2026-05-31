@@ -123,6 +123,8 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
   const statusCt: Record<string, number> = {}
   const scopeCt: Record<string, number> = {}
   const stale: Row[] = [], hung: Row[] = []
+  const active: Row[] = []
+  const doneToday: { t: number; name: string; asg: string }[] = []
   const recent: { t: number; st: string; name: string }[] = []
   const ttToday: Record<string, number> = {}, ttWeek: Record<string, number> = {}
   for (const k of Object.keys(NAMED)) { ttToday[k] = 0; ttWeek[k] = 0 }
@@ -142,6 +144,8 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
       if (INPROGRESS.has(st)) stale.push(row)
       else if (GATES.has(st)) hung.push(row)
     }
+    if (!done && INPROGRESS.has(st)) active.push(row)
+    if (done && upd >= dayStart) doneToday.push({ t: upd, name: it.name, asg })
     if (upd >= winStart) recent.push({ t: upd, st, name: it.name })
     for (const h of it.tt?.[0]?.history || []) {
       const uid = h.started_user_id
@@ -153,71 +157,114 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
     }
   }
   const byAge = (a: Row, b: Row) => b.age - a.age
+  const stIdx = (s: string) => { const i = STATUS_ORDER.indexOf(s); return i < 0 ? 99 : i }
   stale.sort(byAge); hung.sort(byAge)
+  active.sort((a, b) => stIdx(a.st) - stIdx(b.st) || b.age - a.age)
+  doneToday.sort((a, b) => b.t - a.t)
   recent.sort((a, b) => b.t - a.t)
-  return { now, isAM, winStart, statusCt, scopeCt, stale, hung, recent, ttToday, ttWeek, total: items.length, STALE_BASE, SP_GRACE_MIN }
+  return { now, isAM, winStart, statusCt, scopeCt, stale, hung, active, doneToday, recent, ttToday, ttWeek, total: items.length, STALE_BASE, SP_GRACE_MIN }
 }
 
 const esc = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!))
 const hrs = (s: number) => `${(s / 3600).toFixed(1)}h`
 
-function render(r: ReturnType<typeof buildReport>) {
-  const kind = r.isAM ? 'Morning' : 'Evening'
-  const dateStr = fmtET(r.now, { weekday: 'short', month: 'short', day: 'numeric' })
-  const timeStr = fmtET(r.now, { hour: 'numeric', minute: '2-digit' })
-  const winStr = fmtET(new Date(r.winStart), { weekday: 'short', hour: 'numeric', minute: '2-digit' })
-  const subject = `MedMart Dev Sprint — ${kind} Update — ${dateStr}`
+// ── shared rendering pieces ───────────────────────────────────────────────
+const emptyRow = (msg: string) => `<tr><td style="color:#999;padding:4px 8px">${msg}</td></tr>`
+const rowTbl = (rows: Row[]) => rows.slice(0, 20).map(x =>
+  `<tr><td style="padding:2px 8px;color:#b45309;font-weight:600">${x.age}d</td>`
+  + `<td style="padding:2px 8px"><span style="background:#eef;border-radius:4px;padding:1px 6px;font-size:12px">${esc(x.st)}</span> `
+  + `<span style="color:#888;font-size:12px">${esc(x.sc)}</span></td>`
+  + `<td style="padding:2px 8px">${esc(x.name)}${x.sp ? ` <span style="color:#aaa">(${x.sp}sp)</span>` : ''}</td>`
+  + `<td style="padding:2px 8px;color:#555;font-size:12px">${esc(x.asg || 'unassigned')}</td></tr>`).join('')
 
-  const rowTbl = (rows: Row[]) => rows.slice(0, 15).map(x =>
-    `<tr><td style="padding:2px 8px;color:#b45309;font-weight:600">${x.age}d</td>`
-    + `<td style="padding:2px 8px"><span style="background:#eef;border-radius:4px;padding:1px 6px;font-size:12px">${esc(x.st)}</span> `
-    + `<span style="color:#888;font-size:12px">${esc(x.sc)}</span></td>`
-    + `<td style="padding:2px 8px">${esc(x.name)}${x.sp ? ` <span style="color:#aaa">(${x.sp}sp)</span>` : ''}</td>`
-    + `<td style="padding:2px 8px;color:#555;font-size:12px">${esc(x.asg || 'unassigned')}</td></tr>`).join('')
-
+function statusBlock(r: ReturnType<typeof buildReport>) {
   const statusLine = STATUS_ORDER.filter(s => r.statusCt[s])
     .map(s => `<b>${r.statusCt[s]}</b> ${esc(s)}`).join(' · ')
   const scopeLine = Object.entries(r.scopeCt).sort().map(([k, v]) => `${esc(k)} ${v}`).join(', ')
-  const timeRows = Object.entries(NAMED).map(([uid, nm]) =>
-    `<tr><td style="padding:2px 10px">${nm}</td><td style="padding:2px 10px;text-align:right">${hrs(r.ttToday[uid])}</td>`
-    + `<td style="padding:2px 10px;text-align:right">${hrs(r.ttWeek[uid])}</td></tr>`).join('')
-  const recentRows = r.recent.slice(0, 15).map(x =>
-    `<tr><td style="padding:1px 8px;color:#888;font-size:12px">${fmtET(new Date(x.t), { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</td>`
-    + `<td style="padding:1px 8px;font-size:12px"><span style="color:#667">[${esc(x.st)}]</span> ${esc(x.name)}</td></tr>`).join('')
-
-  const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:auto;color:#222">
-  <h2 style="margin:0 0 2px">MedMart Dev Sprint — ${kind} Update</h2>
-  <div style="color:#888;font-size:13px;margin-bottom:14px">${dateStr}, ${timeStr} ET · <a href="${BOARD_URL}">open board</a></div>
-  <div style="background:#f6f7fb;border-radius:8px;padding:10px 14px;margin-bottom:16px">
+  return `<div style="background:#f6f7fb;border-radius:8px;padding:10px 14px;margin-bottom:16px">
     <div style="font-size:13px;color:#555;margin-bottom:4px">${r.total} items</div>
     <div style="font-size:13px;line-height:1.7">${statusLine}</div>
     <div style="font-size:12px;color:#888;margin-top:4px">scope: ${scopeLine}</div>
-  </div>
-  <h3 style="margin:14px 0 4px;color:#b45309">⚠ Stale in-progress — ${r.stale.length} <span style="font-weight:400;font-size:12px;color:#999">(no activity ≥ ${r.STALE_BASE}d; items ≥${r.SP_GRACE_MIN}sp get sp-day grace)</span></h3>
-  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.stale) || '<tr><td style="color:#999;padding:4px 8px">none 🎉</td></tr>'}</table>
-  <h3 style="margin:18px 0 4px;color:#b91c1c">⛔ Hung in deploy/QA gate — ${r.hung.length}</h3>
-  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.hung) || '<tr><td style="color:#999;padding:4px 8px">none 🎉</td></tr>'}</table>
-  <h3 style="margin:18px 0 4px">⏱ Time logged <span style="font-weight:400;font-size:12px;color:#999">(today / week-to-date)</span></h3>
-  <table style="border-collapse:collapse;font-size:13px"><tr style="color:#888"><td style="padding:2px 10px">Assignee</td><td style="padding:2px 10px;text-align:right">Today</td><td style="padding:2px 10px;text-align:right">Week</td></tr>${timeRows}</table>
-  <h3 style="margin:18px 0 4px">🔄 Activity since ${winStr} — ${r.recent.length} items</h3>
-  <table style="border-collapse:collapse;width:100%">${recentRows || '<tr><td style="color:#999;padding:4px 8px">no activity</td></tr>'}</table>
-  <div style="color:#aaa;font-size:11px;margin-top:18px;border-top:1px solid #eee;padding-top:8px">
-    Automated report from ryanpatt.email · board ${BOARD}. Staleness uses each item's last-updated time; a one-time board backfill on 2026-05-26 reset some timestamps, so the first few days under-report staleness.</div>
+  </div>`
+}
+const scopeText = (r: ReturnType<typeof buildReport>) =>
+  Object.entries(r.scopeCt).sort().map(([k, v]) => `${k} ${v}`).join(', ')
+const statusText = (r: ReturnType<typeof buildReport>) =>
+  `${r.total} items: ` + STATUS_ORDER.filter(s => r.statusCt[s]).map(s => `${r.statusCt[s]} ${s}`).join(' · ')
+
+function shell(title: string, dateStr: string, timeStr: string, body: string) {
+  return `<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:auto;color:#222">
+  <h2 style="margin:0 0 2px">${title}</h2>
+  <div style="color:#888;font-size:13px;margin-bottom:14px">${dateStr}, ${timeStr} ET · <a href="${BOARD_URL}">open board</a></div>
+  ${body}
+  <div style="color:#aaa;font-size:11px;margin-top:18px;border-top:1px solid #eee;padding-top:8px">Automated from ryanpatt.com · board ${BOARD}.</div>
 </div>`
+}
+
+// ── 8 AM: what's active / being worked on ─────────────────────────────────
+function renderMorning(r: ReturnType<typeof buildReport>, dateStr: string, timeStr: string) {
+  const subject = `MedMart Dev Sprint — Morning: What's Active — ${dateStr}`
+  const body = `${statusBlock(r)}
+  <h3 style="margin:14px 0 4px">🔧 Active — being worked on — ${r.active.length}</h3>
+  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.active) || emptyRow('nothing in progress')}</table>
+  <h3 style="margin:18px 0 4px;color:#b45309">⚠ Stalling — ${r.stale.length} <span style="font-weight:400;font-size:12px;color:#999">(no update ≥ ${r.STALE_BASE}d; items ≥${r.SP_GRACE_MIN}sp get sp-day grace)</span></h3>
+  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.stale) || emptyRow('none 🎉')}</table>
+  <h3 style="margin:18px 0 4px;color:#b91c1c">⛔ Waiting in deploy/QA gate — ${r.hung.length}</h3>
+  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.hung) || emptyRow('none 🎉')}</table>`
+  const html = shell("MedMart Dev Sprint — Morning · What's Active", dateStr, timeStr, body)
 
   const lines: string[] = []
-  lines.push(`MEDMART DEV SPRINT — ${kind} Update — ${dateStr}, ${timeStr} ET`)
-  lines.push(`${r.total} items: ` + STATUS_ORDER.filter(s => r.statusCt[s]).map(s => `${r.statusCt[s]} ${s}`).join(' · '))
-  lines.push(`scope: ${scopeLine}`)
-  lines.push(`\n⚠ STALE in-progress (≥${r.STALE_BASE}d): ${r.stale.length}`)
-  r.stale.slice(0, 15).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
-  lines.push(`\n⛔ HUNG in deploy/QA gate: ${r.hung.length}`)
-  r.hung.slice(0, 15).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
-  lines.push(`\n⏱ TIME LOGGED (today / week):`)
-  Object.entries(NAMED).forEach(([uid, nm]) => lines.push(`  ${nm}: ${hrs(r.ttToday[uid])} / ${hrs(r.ttWeek[uid])}`))
-  lines.push(`\n🔄 ACTIVITY since ${winStr}: ${r.recent.length} items`)
-  r.recent.slice(0, 15).forEach(x => lines.push(`  ${fmtET(new Date(x.t), { weekday: 'short', hour: 'numeric', minute: '2-digit' })} [${x.st}] ${x.name}`))
+  lines.push(`MEDMART DEV SPRINT — Morning: What's Active — ${dateStr}, ${timeStr} ET`)
+  lines.push(statusText(r)); lines.push(`scope: ${scopeText(r)}`)
+  lines.push(`\n🔧 ACTIVE — being worked on: ${r.active.length}`)
+  r.active.slice(0, 20).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
+  lines.push(`\n⚠ STALLING (no update ≥${r.STALE_BASE}d): ${r.stale.length}`)
+  r.stale.slice(0, 20).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
+  lines.push(`\n⛔ WAITING in deploy/QA gate: ${r.hung.length}`)
+  r.hung.slice(0, 20).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
   return { subject, html, text: lines.join('\n') }
+}
+
+// ── 6 PM: what got done today + activity + hours ──────────────────────────
+function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeStr: string) {
+  const subject = `MedMart Dev Sprint — Evening Wrap-up — ${dateStr}`
+  const winStr = fmtET(new Date(r.winStart), { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+  const tm = (t: number) => fmtET(new Date(t), { hour: 'numeric', minute: '2-digit' })
+  const doneRows = r.doneToday.slice(0, 30).map(x =>
+    `<tr><td style="padding:2px 8px;color:#888;font-size:12px">${tm(x.t)}</td>`
+    + `<td style="padding:2px 8px">${esc(x.name)}</td>`
+    + `<td style="padding:2px 8px;color:#555;font-size:12px">${esc(x.asg || '')}</td></tr>`).join('')
+  const recentRows = r.recent.slice(0, 20).map(x =>
+    `<tr><td style="padding:1px 8px;color:#888;font-size:12px">${tm(x.t)}</td>`
+    + `<td style="padding:1px 8px;font-size:12px"><span style="color:#667">[${esc(x.st)}]</span> ${esc(x.name)}</td></tr>`).join('')
+  const timeRows = Object.entries(NAMED).map(([uid, nm]) =>
+    `<tr><td style="padding:2px 10px">${nm}</td><td style="padding:2px 10px;text-align:right">${hrs(r.ttToday[uid])}</td>`
+    + `<td style="padding:2px 10px;text-align:right">${hrs(r.ttWeek[uid])}</td></tr>`).join('')
+  const body = `${statusBlock(r)}
+  <h3 style="margin:14px 0 4px;color:#15803d">✅ Done today — ${r.doneToday.length}</h3>
+  <table style="border-collapse:collapse;font-size:13px;width:100%">${doneRows || emptyRow('nothing marked done yet')}</table>
+  <h3 style="margin:18px 0 4px">🔄 Activity since ${winStr} — ${r.recent.length} items</h3>
+  <table style="border-collapse:collapse;width:100%">${recentRows || emptyRow('no activity')}</table>
+  <h3 style="margin:18px 0 4px">⏱ Hours <span style="font-weight:400;font-size:12px;color:#999">(today / week-to-date)</span></h3>
+  <table style="border-collapse:collapse;font-size:13px"><tr style="color:#888"><td style="padding:2px 10px">Assignee</td><td style="padding:2px 10px;text-align:right">Today</td><td style="padding:2px 10px;text-align:right">Week</td></tr>${timeRows}</table>`
+  const html = shell('MedMart Dev Sprint — Evening Wrap-up', dateStr, timeStr, body)
+
+  const lines: string[] = []
+  lines.push(`MEDMART DEV SPRINT — Evening Wrap-up — ${dateStr}, ${timeStr} ET`)
+  lines.push(statusText(r)); lines.push(`scope: ${scopeText(r)}`)
+  lines.push(`\n✅ DONE TODAY: ${r.doneToday.length}`)
+  r.doneToday.slice(0, 30).forEach(x => lines.push(`  ${tm(x.t)} ${x.name} — ${x.asg || ''}`.trimEnd()))
+  lines.push(`\n🔄 ACTIVITY since ${winStr}: ${r.recent.length} items`)
+  r.recent.slice(0, 20).forEach(x => lines.push(`  ${tm(x.t)} [${x.st}] ${x.name}`))
+  lines.push(`\n⏱ HOURS (today / week-to-date):`)
+  Object.entries(NAMED).forEach(([uid, nm]) => lines.push(`  ${nm}: ${hrs(r.ttToday[uid])} / ${hrs(r.ttWeek[uid])}`))
+  return { subject, html, text: lines.join('\n') }
+}
+
+function render(r: ReturnType<typeof buildReport>) {
+  const dateStr = fmtET(r.now, { weekday: 'short', month: 'short', day: 'numeric' })
+  const timeStr = fmtET(r.now, { hour: 'numeric', minute: '2-digit' })
+  return r.isAM ? renderMorning(r, dateStr, timeStr) : renderEvening(r, dateStr, timeStr)
 }
 
 async function sendEmail(to: string[], subject: string, html: string, text: string, from: string) {
@@ -260,8 +307,11 @@ export default async function handler(request: Request): Promise<Response> {
       const res = await fetch('https://api.elasticemail.com/v4/domains', { headers: { 'X-ElasticEmail-ApiKey': apiKey } })
       return new Response(await res.text(), { status: res.status, headers: { 'Content-Type': 'application/json' } })
     }
-    // The GitHub Actions caller passes slot=am|pm after doing its own ET gating.
-    // Fallback guard (if called without a slot): only proceed at 8am / 6pm ET.
+    // Vercel Cron fires four UTC slots (12/13/22/23, Mon–Fri); we proceed only
+    // when the punctual fire lands on 8am or 6pm ET, which is exactly one cron
+    // per slot in either DST state — no double-send, DST-proof. The slot/AM is
+    // derived from the ET hour (no slot param needed). ?slot=am|pm forces a run
+    // for manual preview testing.
     const now = new Date()
     const { h } = etParts(now)
     const slot = url.searchParams.get('slot') // 'am' | 'pm'
