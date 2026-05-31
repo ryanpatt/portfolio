@@ -4,12 +4,13 @@ import { Link } from 'react-router-dom'
 /* ─── section model (drives the sticky nav + scrollspy) ───────────────────── */
 
 type SectionId =
-  | 'why' | 'topology' | 'branching' | 'lifecycle'
+  | 'why' | 'roles' | 'topology' | 'branching' | 'lifecycle'
   | 'ci' | 'environments' | 'deploy' | 'hotfix-rollback'
   | 'onboarding' | 'hardening'
 
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'why',              label: 'Why this matters' },
+  { id: 'roles',            label: 'Roles' },
   { id: 'topology',         label: 'System topology' },
   { id: 'branching',        label: 'Branching model' },
   { id: 'lifecycle',        label: 'Change lifecycle' },
@@ -57,6 +58,12 @@ const WHY_BULLETS: { title: string; detail: string }[] = [
   { title: 'The unreleased Supply store stays isolated', detail: 'Long-lived work lives on its own branch + environment, so weekly releases to the live store are never blocked or contaminated by it.' },
   { title: 'Every change is auditable', detail: 'Conventional commits + ticket references + tagged releases mean you can answer "what shipped, when, and why" in seconds.' },
   { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
+]
+
+const ROLES: { seat: string; owns: string; held: string; tone: 'gold' | 'sky' | 'emerald' }[] = [
+  { seat: 'Developer', owns: 'Feature branches, commits, opening PRs, responding to CI + review, local verification.', held: 'Whoever is building', tone: 'emerald' },
+  { seat: 'Reviewer / Lead', owns: 'PR review + approval, code quality, architecture, keeping CODEOWNERS pointed at the right people.', held: 'Ryan (interim)', tone: 'gold' },
+  { seat: 'Release Owner', owns: 'Environment promotion, the manual Cloud push, the release schedule, rollback decisions.', held: 'Seat being filled — Ryan covers interim', tone: 'sky' },
 ]
 
 const ONBOARDING: string[] = [
@@ -291,6 +298,33 @@ export default function MedmartDevOps() {
                 </Card>
               ))}
             </div>
+          </section>
+
+          <section id="roles" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Roles</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              The pipeline is described in terms of <span className="text-ink">seats, not individuals</span> — so a seat can be
+              handed off cleanly as the team grows without the docs going stale. This replaces the old reliance on a single
+              named release manager and a now-defunct external architect team.
+            </p>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              {ROLES.map((r) => (
+                <Card key={r.seat}>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-base text-ink">{r.seat}</h3>
+                    <Pill tone={r.tone}>seat</Pill>
+                  </div>
+                  <p className="mt-2 text-sm text-muted">{r.owns}</p>
+                  <p className="mt-3 text-xs text-muted"><span className="text-gold">Currently held by:</span> {r.held}</p>
+                </Card>
+              ))}
+            </div>
+            <Card className="mt-4 border-gold/30">
+              <p className="text-sm text-ink">
+                <span className="text-gold">One person may wear several hats today.</span> Naming the seats is what makes the
+                eventual hand-off a name change, not a rebuild.
+              </p>
+            </Card>
           </section>
 
           <section id="topology" className="scroll-mt-10">
