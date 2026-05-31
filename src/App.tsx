@@ -27,6 +27,7 @@ const MedmartPdpDemo = lazy(() => import('./components/MedmartPdpDemo'))
 const MedmartDevOps = lazy(() => import('./components/MedmartDevOps'))
 const MedmartRoadmap2026 = lazy(() => import('./components/MedmartRoadmap2026'))
 const DemoStore = lazy(() => import('./components/demo/DemoStore'))
+const EmailCampaigns = lazy(() => import('./components/demo/EmailCampaigns'))
 const KloyHub = lazy(() => import('./components/KloyHub'))
 const KloyProject = lazy(() => import('./components/KloyProject'))
 const FxchPolc = lazy(() => import('./components/FxchPolc'))
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="/medmart/pdp-demo" element={<MedmartPdpDemo />} />
           <Route path="/medmart/roadmap2026" element={<MedmartRoadmap2026 />} />
           <Route path="/medmart/demo-store/*" element={<DemoStore />} />
+          <Route path="/medmart/email-campaigns" element={<EmailCampaigns />} />
           <Route path="/medmart/devops" element={<MedmartDevOps />} />
           <Route path="/kloy/demo" element={<KloyHub />} />
           <Route path="/kloy/demo/:slug" element={<KloyProject />} />

@@ -498,13 +498,14 @@ export default function MedmartRoadmap2026() {
             <p className="mt-3 text-sm text-muted">Tip: start on the Home page and shop all the way through to the order confirmation — the cart carries across pages.</p>
           </DesignSub>
 
-          <DesignSub title="Email campaigns — recover & grow revenue between visits" desc="The storefront redesign is above (open the live demo). These are the lifecycle email campaigns that bring shoppers back and lift repeat revenue — abandonment recovery, accessory cross-sell, win-back, and a survey-for-discount that grows the list and the review count.">
-            <div className="grid gap-5 lg:grid-cols-2">
-              <CampaignAbandoned />
-              <CampaignAccessories />
-              <CampaignSurvey />
-              <CampaignWinback />
-            </div>
+          <DesignSub title="Email campaigns — full branded templates" desc="The lifecycle emails that recover and grow revenue between visits — each a complete, fully-branded MedMart template. Open the gallery to see them full-size.">
+            <Link to="/medmart/email-campaigns" className="group flex items-center justify-between gap-4 rounded-xl border border-gold/30 bg-gold/5 p-5 transition-colors hover:bg-gold/10">
+              <span>
+                <span className="block font-display text-lg font-semibold text-ink">Open the email campaign gallery</span>
+                <span className="mt-1 block text-sm text-muted">Full templates: abandoned cart · new arrivals · accessory cross-sell · survey-for-10%-off · win-back</span>
+              </span>
+              <Icon name="chevron" className="h-6 w-6 shrink-0 text-gold-light transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </DesignSub>
         </Section>
 
@@ -630,18 +631,6 @@ function Icon({ name, className = 'h-4 w-4' }: { name: string; className?: strin
   )
 }
 
-function Stars({ className = 'h-4 w-4' }: { className?: string }) {
-  return (
-    <span className="inline-flex text-gold">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-          <path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.8 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" />
-        </svg>
-      ))}
-    </span>
-  )
-}
-
 
 function DesignSub({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
@@ -650,88 +639,5 @@ function DesignSub({ title, desc, children }: { title: string; desc: string; chi
       <p className="mb-4 mt-1 max-w-3xl text-sm text-muted">{desc}</p>
       {children}
     </div>
-  )
-}
-
-
-/* ----------------------------- email campaigns ---------------------------- */
-
-function EmailShell({ tag, trigger, subject, children }: { tag: string; trigger: string; subject: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border-subtle bg-card p-5">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="rounded-md bg-gold/15 px-2 py-0.5 text-sm font-semibold text-gold-light">{tag}</span>
-        <span className="text-sm text-muted">{trigger}</span>
-      </div>
-      <div className="overflow-hidden rounded-lg border border-border-subtle bg-white text-sm text-gray-800">
-        <div className="flex items-center gap-2 bg-[#1c3251] px-4 py-3 text-white"><span className="font-bold tracking-wide">MED MART</span></div>
-        <div className="border-b border-gray-100 px-4 py-2 font-mono text-xs text-gray-500">Subject: {subject}</div>
-        <div className="p-4">{children}</div>
-      </div>
-    </div>
-  )
-}
-
-function CampaignAbandoned() {
-  return (
-    <EmailShell tag="Abandonment recovery" trigger="3-touch: 1 hour, 1 day, 3 days after cart left" subject="Still thinking it over, Jordan?">
-      <p>Your <strong>Golden Buzzaround HD</strong> is still in your cart — we saved it for you.</p>
-      <div className="mt-3 flex items-center gap-3 rounded-md bg-gray-50 p-3">
-        <div className="grid h-14 w-14 shrink-0 place-items-center rounded bg-gray-200 text-xs text-gray-500">scooter</div>
-        <div><div className="font-semibold">$1,899</div><div className="text-[#0076bc]">or $79/mo · HSA/FSA eligible</div></div>
-      </div>
-      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Complete your order</button>
-      <p className="mt-2 text-sm text-gray-500">Questions about fit or financing? Reply to this email or call — a real specialist answers. (Touch 3 adds a small incentive.)</p>
-    </EmailShell>
-  )
-}
-
-function CampaignAccessories() {
-  const items = [['Deluxe scooter cover', '$39'], ['Cup & cane holder', '$19'], ['Spare battery pack', '$189']]
-  return (
-    <EmailShell tag="Cross-sell / accessories" trigger="7 days after delivery, or browse-based" subject="Complete your setup, Jordan">
-      <p>Owners of the <strong>Buzzaround HD</strong> love these add-ons:</p>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        {items.map(([n, pr]) => (
-          <div key={n} className="rounded-md border border-gray-100 p-2 text-center">
-            <div className="mx-auto grid h-12 w-full place-items-center rounded bg-gray-100 text-[10px] text-gray-400">image</div>
-            <div className="mt-1 text-xs font-medium leading-tight text-gray-800">{n}</div>
-            <div className="text-xs font-semibold text-gray-900">{pr}</div>
-          </div>
-        ))}
-      </div>
-      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Shop accessories</button>
-      <p className="mt-2 text-sm text-gray-500">Also powers “new arrivals in Mobility Scooters” to past browsers.</p>
-    </EmailShell>
-  )
-}
-
-function CampaignSurvey() {
-  return (
-    <EmailShell tag="Survey → discount" trigger="after a support call or 30 days post-purchase" subject="How are we doing? Here’s 10% off to say thanks">
-      <p>Your feedback shapes what we stock and how we help. Two minutes is all it takes.</p>
-      <div className="mt-3 flex items-center justify-center gap-2 rounded-md bg-gray-50 py-3">
-        <Stars className="h-6 w-6" /><span className="text-xs text-gray-500">tap to rate</span>
-      </div>
-      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Take the 2-minute survey</button>
-      <div className="mt-3 flex items-center gap-2 rounded-md bg-[#fdeaea] px-3 py-2 text-sm text-[#b5231f]">
-        <span className="rounded bg-[#e3252b] px-1.5 py-0.5 text-xs font-bold text-white">10% OFF</span> emailed the moment you finish.
-      </div>
-      <p className="mt-2 text-sm text-gray-500">Grows your review count, your list, and tells you why people hesitate.</p>
-    </EmailShell>
-  )
-}
-
-function CampaignWinback() {
-  return (
-    <EmailShell tag="Win-back" trigger="90 days inactive" subject="We miss you — here’s 15% off, on us">
-      <p>It’s been a while, Jordan. Whatever you need next, we’ll help you find it — and take care of delivery and setup.</p>
-      <div className="mt-3 rounded-md border border-dashed border-[#e3252b] bg-[#fdeaea] p-3 text-center">
-        <div className="font-display text-2xl font-extrabold text-[#e3252b]">15% OFF</div>
-        <div className="text-xs text-gray-600">your next order · code <span className="font-mono font-semibold text-gray-900">WELCOME15</span></div>
-      </div>
-      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Come back & save</button>
-      <p className="mt-2 text-sm text-gray-500">Plus free shipping — always. Business carts route to a rep instead.</p>
-    </EmailShell>
   )
 }
