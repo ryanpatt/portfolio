@@ -46,6 +46,44 @@ const WHY_BULLETS: { title: string; detail: string }[] = [
   { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
 ]
 
+const BRANCHES: { branch: string; env: string; job: string; tone: 'red' | 'gold' | 'sky' }[] = [
+  { branch: 'production', env: 'Production', job: 'Source of truth = what is live. Protected. Only release merges + hotfixes land here.', tone: 'red' },
+  { branch: 'staging',    env: 'Staging',    job: 'Release candidate. Prod-like. Holds only what ships next; reset from production each cycle so it never drifts.', tone: 'gold' },
+  { branch: 'mm-supply',  env: 'Development (Integration)', job: 'Incubator for the unreleased MedMart Supply store. Long-lived, isolated from the weekly release train until launch.', tone: 'sky' },
+]
+
+function BranchFlowDiagram() {
+  return (
+    <svg viewBox="0 0 760 230" className="w-full" role="img" aria-label="Branch flow">
+      {/* three lanes */}
+      {[
+        { y: 40,  name: 'production', cls: 'stroke-red-400' },
+        { y: 120, name: 'staging',    cls: 'stroke-gold' },
+        { y: 200, name: 'mm-supply',  cls: 'stroke-sky-400' },
+      ].map((lane) => (
+        <g key={lane.name}>
+          <line x1={120} y1={lane.y} x2={740} y2={lane.y} className={lane.cls} strokeWidth={2} />
+          <text x={10} y={lane.y + 4} className="fill-ink text-[11px]">{lane.name}</text>
+        </g>
+      ))}
+      {/* feature off production → staging */}
+      <path d="M220,40 C220,80 300,90 300,120" className="fill-none stroke-muted" strokeWidth={1.5} markerEnd="url(#a)" />
+      <text x={150} y={78} className="fill-muted text-[9px]">cut MM-… off production</text>
+      {/* staging → production (release) */}
+      <path d="M520,120 C520,80 600,75 600,40" className="fill-none stroke-emerald-400" strokeWidth={1.5} markerEnd="url(#a)" />
+      <text x={520} y={100} className="fill-emerald-400 text-[9px]">release: staging → production</text>
+      {/* hotfix off production back to staging */}
+      <path d="M680,40 C680,90 660,110 660,120" className="fill-none stroke-orange-400" strokeWidth={1.5} strokeDasharray="3 2" markerEnd="url(#a)" />
+      <text x={600} y={150} className="fill-orange-400 text-[9px]">hotfix back-merge</text>
+      <defs>
+        <marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6" className="fill-none stroke-muted" strokeWidth={1.5} />
+        </marker>
+      </defs>
+    </svg>
+  )
+}
+
 function TopologyDiagram() {
   const box = 'fill-card stroke-border-subtle'
   const label = 'fill-ink text-[11px] font-medium'
@@ -87,7 +125,6 @@ function TopologyDiagram() {
 }
 
 export default function MedmartDevOps() {
-  void Pill // temporary: keeps the build green until Pill is used in a later task
   const [active, setActive] = useState<SectionId>('why')
 
   useEffect(() => {
@@ -162,8 +199,34 @@ export default function MedmartDevOps() {
             <Card className="mt-5"><TopologyDiagram /></Card>
           </section>
 
+          <section id="branching" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Branching model</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              Three long-lived branches, each pinned to one Cloud environment. This is what removes cherry-picking:
+              the only work that ever touches <code className="text-gold">staging</code> is work approved for the next
+              release, so promoting <code className="text-gold">staging → production</code> is a clean whole-branch merge.
+            </p>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              {BRANCHES.map((b) => (
+                <Card key={b.branch}>
+                  <div className="flex items-center justify-between">
+                    <code className="text-sm text-ink">{b.branch}</code>
+                    <Pill tone={b.tone}>{b.env}</Pill>
+                  </div>
+                  <p className="mt-2 text-sm text-muted">{b.job}</p>
+                </Card>
+              ))}
+            </div>
+            <Card className="mt-4"><BranchFlowDiagram /></Card>
+            <Card className="mt-4 border-gold/30">
+              <p className="text-sm text-ink"><span className="text-gold">Habit change:</span> branch off
+                <code className="mx-1 text-gold">production</code>, not <code className="mx-1 text-gold">staging</code> —
+                your change is based on what is actually live, so it promotes without dragging unreleased work.</p>
+            </Card>
+          </section>
+
           {/* placeholders — replaced in later tasks */}
-          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology').map((s) => (
+          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching').map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-10">
               <h2 className="font-display text-2xl text-ink">{s.label}</h2>
               <p className="mt-2 text-muted">Section content — built in later tasks.</p>
