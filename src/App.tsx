@@ -1,184 +1,36 @@
-import { useState, useEffect, useRef } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import Nav from './components/Nav'
-import Hero from './components/sections/Hero'
-import About from './components/sections/About'
-import Skills from './components/sections/Skills'
-import Experience from './components/sections/Experience'
-import Integrations from './components/sections/Integrations'
-import Projects from './components/sections/Projects'
-import Apps from './components/sections/Apps'
-import Contact from './components/sections/Contact'
-import PrintButton from './components/PrintButton'
-import Resume from './components/Resume'
-import MedmartHub from './components/MedmartHub'
-import MedmartDemo from './components/MedmartDemo'
-import MedmartAIDemo from './components/MedmartAIDemo'
-import MedmartTraining from './components/MedmartTraining'
-import MedmartGMCPage from './components/MedmartGMCPage'
-import MedmartCriteoPage from './components/MedmartCriteoPage'
-import MedmartConfigReview from './components/MedmartConfigReview'
-import MedmartCloudflareReview from './components/MedmartCloudflareReview'
-import MedmartMaxReview from './components/MedmartMaxReview'
-import MedmartFraudReview from './components/MedmartFraudReview'
-import MedmartMckessonLogicbroker from './components/MedmartMckessonLogicbroker'
-import KloyHub from './components/KloyHub'
-import KloyProject from './components/KloyProject'
-import FxchPolc from './components/FxchPolc'
-import FxchModel from './components/FxchModel'
-import PrivacyAndTerms from './components/PrivacyAndTerms'
-import AIPage from './components/AIPage'
-import EmailsPage from './components/EmailsPage'
+import { useEffect, lazy, Suspense } from 'react'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import ChatWidget from './components/ChatWidget'
-import { navItems } from './data/content'
-import { useActiveSection } from './hooks/useActiveSection'
 import { track, describeClick } from './lib/analytics'
 
-export type NavPosition = 'left' | 'right'
+export type { NavPosition } from './components/PortfolioLayout'
 
-function PortfolioLayout() {
-  const [navPosition, setNavPosition] = useState<NavPosition>(() => {
-    return (localStorage.getItem('navPosition') as NavPosition) || 'left'
-  })
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const mainRef = useRef<HTMLElement>(null)
-  const sectionIds = navItems.map((n) => n.id)
-  const activeSection = useActiveSection(sectionIds)
-
-  useEffect(() => {
-    localStorage.setItem('navPosition', navPosition)
-  }, [navPosition])
-
-  useEffect(() => {
-    const els = document.querySelectorAll<HTMLElement>('.reveal')
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('visible')
-            observer.unobserve(e.target)
-          }
-        })
-      },
-      { threshold: 0.1 }
-    )
-    els.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
-  }, [])
-
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-    setMobileMenuOpen(false)
-  }
-
-  const toggleNavPosition = () =>
-    setNavPosition((p) => (p === 'left' ? 'right' : 'left'))
-
-  return (
-    <div className="flex h-screen overflow-hidden bg-bg">
-      {navPosition === 'left' && (
-        <Nav
-          position="left"
-          activeSection={activeSection}
-          onTogglePosition={toggleNavPosition}
-          onScrollTo={scrollTo}
-          mobileOpen={mobileMenuOpen}
-          onMobileClose={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      <main
-        ref={mainRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth"
-      >
-        {/* Mobile header */}
-        <div className="md:hidden sticky top-0 z-40 flex items-center justify-between px-5 py-4 bg-bg/95 backdrop-blur border-b border-border-subtle">
-          <span className="font-display font-semibold text-gold text-lg">RP</span>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-muted hover:text-ink transition-colors p-2 -mr-2"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {/* Mobile menu overlay */}
-        {mobileMenuOpen && (
-          <div
-            className="md:hidden fixed inset-0 z-50 bg-bg/98 backdrop-blur flex flex-col"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
-              <span className="font-display font-semibold text-gold text-lg">RP</span>
-              <button onClick={() => setMobileMenuOpen(false)} className="text-muted p-2 -mr-2">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <nav className="flex flex-col px-6 py-8 gap-2">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollTo(item.id)}
-                  className={`text-left text-lg font-medium py-3 transition-colors ${
-                    activeSection === item.id ? 'text-gold' : 'text-muted hover:text-ink'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-        )}
-
-        <Hero onScrollTo={scrollTo} />
-        <About />
-        <Skills />
-        <Experience />
-        <Integrations />
-        <Projects />
-        <Apps />
-        <Contact />
-      </main>
-
-      {navPosition === 'right' && (
-        <Nav
-          position="right"
-          activeSection={activeSection}
-          onTogglePosition={toggleNavPosition}
-          onScrollTo={scrollTo}
-          mobileOpen={mobileMenuOpen}
-          onMobileClose={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      <PrintButton />
-    </div>
-  )
-}
-
-function HashRedirect() {
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  useEffect(() => {
-    if (location.hash === '#resume') {
-      navigate('/resume', { replace: true })
-    }
-  }, [location.hash, navigate])
-
-  return <PortfolioLayout />
-}
+/* Route-level code splitting — each page ships as its own chunk so a given
+   route only downloads the code it needs (keeps per-page payload small). */
+const PortfolioLayout = lazy(() => import('./components/PortfolioLayout'))
+const Resume = lazy(() => import('./components/Resume'))
+const MedmartHub = lazy(() => import('./components/MedmartHub'))
+const MedmartDemo = lazy(() => import('./components/MedmartDemo'))
+const MedmartAIDemo = lazy(() => import('./components/MedmartAIDemo'))
+const MedmartTraining = lazy(() => import('./components/MedmartTraining'))
+const MedmartGMCPage = lazy(() => import('./components/MedmartGMCPage'))
+const MedmartCriteoPage = lazy(() => import('./components/MedmartCriteoPage'))
+const MedmartCriteoCtmWalkthrough = lazy(() => import('./components/MedmartCriteoCtmWalkthrough'))
+const MedmartConfigReview = lazy(() => import('./components/MedmartConfigReview'))
+const MedmartCloudflareReview = lazy(() => import('./components/MedmartCloudflareReview'))
+const MedmartMaxReview = lazy(() => import('./components/MedmartMaxReview'))
+const MedmartFraudReview = lazy(() => import('./components/MedmartFraudReview'))
+const MedmartTestBotsFollowup = lazy(() => import('./components/MedmartTestBotsFollowup'))
+const MedmartTeamManagement = lazy(() => import('./components/MedmartTeamManagement'))
+const MedmartMckessonLogicbroker = lazy(() => import('./components/MedmartMckessonLogicbroker'))
+const MedmartPdpDemo = lazy(() => import('./components/MedmartPdpDemo'))
+const KloyHub = lazy(() => import('./components/KloyHub'))
+const KloyProject = lazy(() => import('./components/KloyProject'))
+const FxchPolc = lazy(() => import('./components/FxchPolc'))
+const FxchModel = lazy(() => import('./components/FxchModel'))
+const PrivacyAndTerms = lazy(() => import('./components/PrivacyAndTerms'))
+const AIPage = lazy(() => import('./components/AIPage'))
+const EmailsPage = lazy(() => import('./components/EmailsPage'))
 
 function RouteTracker() {
   const location = useLocation()
@@ -209,28 +61,34 @@ export default function App() {
     <>
       <RouteTracker />
       <ClickTracker />
-      <Routes>
-        <Route path="/emails" element={<EmailsPage />} />
-        <Route path="/ai" element={<AIPage />} />
-        <Route path="/medmart" element={<MedmartHub />} />
-        <Route path="/medmart/demo" element={<MedmartDemo />} />
-        <Route path="/medmart/ai-demo" element={<MedmartAIDemo />} />
-        <Route path="/medmart/training" element={<MedmartTraining />} />
-        <Route path="/medmart/convert-gmc" element={<MedmartGMCPage />} />
-        <Route path="/medmart/criteo" element={<MedmartCriteoPage />} />
-        <Route path="/medmart/config-review" element={<MedmartConfigReview />} />
-        <Route path="/medmart/cloudflare-review" element={<MedmartCloudflareReview />} />
-        <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
-        <Route path="/medmart/fraud-review" element={<MedmartFraudReview />} />
-        <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
-        <Route path="/kloy/demo" element={<KloyHub />} />
-        <Route path="/kloy/demo/:slug" element={<KloyProject />} />
-        <Route path="/kloy/fxch" element={<FxchPolc />} />
-        <Route path="/kloy/fxch/model" element={<FxchModel />} />
-        <Route path="/privacy-and-terms" element={<PrivacyAndTerms />} />
-        <Route path="/resume" element={<Resume />} />
-        <Route path="*" element={<HashRedirect />} />
-      </Routes>
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <Routes>
+          <Route path="/emails" element={<EmailsPage />} />
+          <Route path="/ai" element={<AIPage />} />
+          <Route path="/medmart" element={<MedmartHub />} />
+          <Route path="/medmart/demo" element={<MedmartDemo />} />
+          <Route path="/medmart/ai-demo" element={<MedmartAIDemo />} />
+          <Route path="/medmart/training" element={<MedmartTraining />} />
+          <Route path="/medmart/convert-gmc" element={<MedmartGMCPage />} />
+          <Route path="/medmart/criteo" element={<MedmartCriteoPage />} />
+          <Route path="/medmart/criteo-ctm-walkthrough" element={<MedmartCriteoCtmWalkthrough />} />
+          <Route path="/medmart/config-review" element={<MedmartConfigReview />} />
+          <Route path="/medmart/cloudflare-review" element={<MedmartCloudflareReview />} />
+          <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
+          <Route path="/medmart/fraud-review" element={<MedmartFraudReview />} />
+          <Route path="/medmart/testbots-followup" element={<MedmartTestBotsFollowup />} />
+          <Route path="/medmart/team-management" element={<MedmartTeamManagement />} />
+          <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
+          <Route path="/medmart/pdp-demo" element={<MedmartPdpDemo />} />
+          <Route path="/kloy/demo" element={<KloyHub />} />
+          <Route path="/kloy/demo/:slug" element={<KloyProject />} />
+          <Route path="/kloy/fxch" element={<FxchPolc />} />
+          <Route path="/kloy/fxch/model" element={<FxchModel />} />
+          <Route path="/privacy-and-terms" element={<PrivacyAndTerms />} />
+          <Route path="/resume" element={<Resume />} />
+          <Route path="*" element={<PortfolioLayout />} />
+        </Routes>
+      </Suspense>
       <ChatWidget />
     </>
   )

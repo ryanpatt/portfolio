@@ -10,6 +10,24 @@ const pages: {
   icon: React.ReactNode
 }[] = [
   {
+    path: '/medmart/pdp-demo',
+    category: 'Concept',
+    categoryColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    title: 'PDP Conversion Demo',
+    description: 'A reimagined product page for the Golden Technologies Buzzaround XL+ — conversion-first, tuned for a senior + caregiver audience, and built to score 95+ on Lighthouse.',
+    bullets: [
+      'Interactive color picker + live price configurator (battery, service plan)',
+      'Inline-SVG hero for instant LCP; real photos lazy-loaded with zero CLS',
+      'Sticky buy bar, Affirm monthly estimate, trust signals, FAQ',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="3" y="4" width="18" height="14" rx="2" />
+        <path d="M3 9h18M8 18v3M16 18v3M7 21h10" />
+      </svg>
+    ),
+  },
+  {
     path: '/medmart/demo',
     category: 'Security',
     categoryColor: 'bg-red-500/10 text-red-400 border-red-500/20',
@@ -152,6 +170,24 @@ const pages: {
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    path: '/medmart/testbots-followup',
+    category: 'Security',
+    categoryColor: 'bg-red-500/10 text-red-400 border-red-500/20',
+    title: 'Bot Activity — 48h Follow-up',
+    description: 'Two days after the 2026-05-25 card-testing incident — did the bot come back, and are the edge defenses still in place? Read-only API check of the Cloudflare zone.',
+    bullets: [
+      '94.72.160.10 block + payment-information rate limit both still active',
+      'Bot/geo rule set unchanged since the 2026-05-26 Cloudflare review',
+      'Traffic counts still gated by Zone · Analytics · Read on the token',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
       </svg>
     ),
   },
