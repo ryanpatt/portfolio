@@ -5,3 +5,10 @@ dist
 .DS_Store
 *.local
 .vercel
+
+# Local-only team roster prototype (real employee access data — never commit/deploy)
+src/data/teamRosterLocal.json
+src/components/MedmartTeamManagement.tsx
+
+# Internal design specs (security tooling) — keep out of public repo
+docs/superpowers/

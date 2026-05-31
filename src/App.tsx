@@ -21,7 +21,6 @@ const MedmartCloudflareReview = lazy(() => import('./components/MedmartCloudflar
 const MedmartMaxReview = lazy(() => import('./components/MedmartMaxReview'))
 const MedmartFraudReview = lazy(() => import('./components/MedmartFraudReview'))
 const MedmartTestBotsFollowup = lazy(() => import('./components/MedmartTestBotsFollowup'))
-const MedmartTeamManagement = lazy(() => import('./components/MedmartTeamManagement'))
 const MedmartAuthnetReview = lazy(() => import('./components/MedmartAuthnetReview'))
 const MedmartMckessonLogicbroker = lazy(() => import('./components/MedmartMckessonLogicbroker'))
 const MedmartPdpDemo = lazy(() => import('./components/MedmartPdpDemo'))
@@ -83,7 +82,6 @@ export default function App() {
           <Route path="/medmart/max-review" element={<MedmartMaxReview />} />
           <Route path="/medmart/fraud-review" element={<MedmartFraudReview />} />
           <Route path="/medmart/testbots-followup" element={<MedmartTestBotsFollowup />} />
-          <Route path="/medmart/team-management" element={<MedmartTeamManagement />} />
           <Route path="/medmart/authnet-review" element={<MedmartAuthnetReview />} />
           <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
           <Route path="/medmart/pdp-demo" element={<MedmartPdpDemo />} />
