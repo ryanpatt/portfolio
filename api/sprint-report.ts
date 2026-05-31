@@ -99,6 +99,49 @@ async function fetchActivity(fromISO: string, toISO: string): Promise<ActLog[]> 
   return d.boards[0].activity_logs || []
 }
 
+// GitHub repo + the git author emails that map to each Monday member. Tu Van /
+// Adriana have no commit history yet (recently started); add their emails here
+// when they appear. Unmapped authors (Max, Ryan, etc.) are ignored.
+const GH_REPO = { owner: 'Med-mart', name: 'mmr-web-m2' }
+const COMMIT_EMAILS: Record<string, string[]> = {
+  '96592612': ['faisal2010@users.noreply.github.com', 'faisalkhalil2010@gmail.com', 'faisal2010@gmail.com', 'fkhalil@primexinc.com'], // Faisal
+  '97246569': ['annah@medmart.com'], // Anna
+  '104228757': [], // Tu Van
+  '101693627': [], // Adriana
+}
+
+// Per-member commit counts on the repo across ALL branches, committed in
+// [sinceISO, untilISO]. One GraphQL query over the most-recently-committed
+// branches; deduped by oid. Best-effort — returns {} on any failure.
+async function fetchCommits(sinceISO: string, untilISO: string): Promise<Record<string, number>> {
+  const token = process.env.GITHUB_TOKEN
+  const counts: Record<string, number> = {}
+  if (!token) return counts
+  const emailToMember: Record<string, string> = {}
+  for (const [id, emails] of Object.entries(COMMIT_EMAILS)) for (const e of emails) emailToMember[e.toLowerCase()] = id
+  const query = `query($since:GitTimestamp!){repository(owner:"${GH_REPO.owner}",name:"${GH_REPO.name}"){
+    refs(refPrefix:"refs/heads/",first:60,orderBy:{field:TAG_COMMIT_DATE,direction:DESC}){
+      nodes{target{... on Commit{history(first:100,since:$since){nodes{oid committedDate author{email}}}}}}}}}`
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'medmart-sprint-report' },
+    body: JSON.stringify({ query, variables: { since: sinceISO } }),
+  })
+  if (!res.ok) return counts
+  const j: any = await res.json()
+  const seen = new Set<string>()
+  for (const ref of j?.data?.repository?.refs?.nodes || []) {
+    for (const c of ref?.target?.history?.nodes || []) {
+      if (seen.has(c.oid)) continue
+      seen.add(c.oid)
+      if (c.committedDate < sinceISO || c.committedDate > untilISO) continue
+      const id = emailToMember[(c.author?.email || '').toLowerCase()]
+      if (id) counts[id] = (counts[id] || 0) + 1
+    }
+  }
+  return counts
+}
+
 // ── ET / DST helpers ────────────────────────────────────────────────────────
 function etParts(d: Date) {
   const fmt = new Intl.DateTimeFormat('en-US', {
@@ -184,7 +227,7 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
   active.sort((a, b) => stIdx(a.st) - stIdx(b.st) || b.age - a.age)
   doneToday.sort((a, b) => b.t - a.t)
   recent.sort((a, b) => b.t - a.t)
-  return { now, isAM, winStart, statusCt, scopeCt, stale, hung, active, doneToday, recent, ttToday, ttWeek, notesByUser, total: items.length, STALE_BASE, SP_GRACE_MIN }
+  return { now, isAM, winStart, dayStart, statusCt, scopeCt, stale, hung, active, doneToday, recent, ttToday, ttWeek, notesByUser, total: items.length, STALE_BASE, SP_GRACE_MIN }
 }
 
 // Per-member activity (status changes + notes + other edits + hours) for the
@@ -193,12 +236,12 @@ type Member = {
   name: string; hToday: number; hWeek: number
   status: { t: number; task: string; from: string; to: string }[]
   notes: { t: number; name: string }[]
-  edits: number
+  edits: number; commits: number
 }
-function buildMembers(r: ReturnType<typeof buildReport>, logs: ActLog[]): Member[] {
+function buildMembers(r: ReturnType<typeof buildReport>, logs: ActLog[], commits: Record<string, number>): Member[] {
   const m: Record<string, Member> = {}
   for (const [id, name] of Object.entries(NAMED)) {
-    m[id] = { name, hToday: r.ttToday[id] || 0, hWeek: r.ttWeek[id] || 0, status: [], notes: r.notesByUser[id] || [], edits: 0 }
+    m[id] = { name, hToday: r.ttToday[id] || 0, hWeek: r.ttWeek[id] || 0, status: [], notes: r.notesByUser[id] || [], edits: 0, commits: commits[id] || 0 }
   }
   for (const l of logs) {
     const uid = String(l.user_id)
@@ -296,8 +339,8 @@ function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeS
     const acts: string[] = []
     m.status.slice(0, 6).forEach(s => acts.push(`<div style="font-size:12px;color:#555;padding:1px 0">↪ <b>${esc(s.to)}</b> <span style="color:#999">(from ${esc(s.from)})</span> · ${esc(s.task)} <span style="color:#aaa">${tm(s.t)}</span></div>`))
     m.notes.slice(0, 6).forEach(n => acts.push(`<div style="font-size:12px;color:#555;padding:1px 0">📝 note · ${esc(n.name)} <span style="color:#aaa">${tm(n.t)}</span></div>`))
-    const summ = `${hrs(m.hToday)} today / ${hrs(m.hWeek)} wk · ${m.status.length} status · ${m.notes.length} notes${m.edits ? ` · ${m.edits} edits` : ''}`
-    const quiet = !m.status.length && !m.notes.length && !m.edits && !m.hToday
+    const summ = `${hrs(m.hToday)} today / ${hrs(m.hWeek)} wk · ${m.commits} commits · ${m.status.length} status · ${m.notes.length} notes${m.edits ? ` · ${m.edits} edits` : ''}`
+    const quiet = !m.status.length && !m.notes.length && !m.edits && !m.hToday && !m.commits
     return `<div style="margin:6px 0;padding:8px 10px;background:#fafafa;border-radius:6px">
       <div><b>${esc(m.name)}</b> <span style="color:#888;font-size:12px">· ${summ}</span></div>
       ${quiet ? '<div style="font-size:12px;color:#bbb">no activity</div>' : acts.join('')}</div>`
@@ -307,7 +350,7 @@ function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeS
   <table style="border-collapse:collapse;font-size:13px;width:100%">${doneRows || emptyRow('nothing marked done yet')}</table>
   <h3 style="margin:18px 0 4px">🔄 Activity since ${winStr} — ${r.recent.length} items</h3>
   <table style="border-collapse:collapse;width:100%">${recentRows || emptyRow('no activity')}</table>
-  <h3 style="margin:18px 0 4px">👥 By team member <span style="font-weight:400;font-size:12px;color:#999">(time · status changes · notes, since ${winStr})</span></h3>
+  <h3 style="margin:18px 0 4px">👥 By team member <span style="font-weight:400;font-size:12px;color:#999">(hours · commits today · status changes · notes)</span></h3>
   ${memberBlocks}`
   const html = shell('MedMart Dev Sprint — Evening Wrap-up', dateStr, timeStr, body)
 
@@ -318,9 +361,9 @@ function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeS
   r.doneToday.slice(0, 30).forEach(x => lines.push(`  ${tm(x.t)} ${x.name} — ${x.asg || ''}`.trimEnd()))
   lines.push(`\n🔄 ACTIVITY since ${winStr}: ${r.recent.length} items`)
   r.recent.slice(0, 20).forEach(x => lines.push(`  ${tm(x.t)} [${x.st}] ${x.name}`))
-  lines.push(`\n👥 BY TEAM MEMBER (time today/wk · status · notes, since ${winStr}):`)
+  lines.push(`\n👥 BY TEAM MEMBER (hours today/wk · commits today · status · notes):`)
   members.forEach(m => {
-    lines.push(`  ${m.name}: ${hrs(m.hToday)} today / ${hrs(m.hWeek)} wk · ${m.status.length} status · ${m.notes.length} notes${m.edits ? ` · ${m.edits} edits` : ''}`)
+    lines.push(`  ${m.name}: ${hrs(m.hToday)} today / ${hrs(m.hWeek)} wk · ${m.commits} commits · ${m.status.length} status · ${m.notes.length} notes${m.edits ? ` · ${m.edits} edits` : ''}`)
     m.status.slice(0, 6).forEach(s => lines.push(`     ↪ ${s.to} (from ${s.from}) · ${s.task} ${tm(s.t)}`))
     m.notes.slice(0, 6).forEach(n => lines.push(`     📝 note · ${n.name} ${tm(n.t)}`))
   })
@@ -389,11 +432,17 @@ export default async function handler(request: Request): Promise<Response> {
     }
     const items = await fetchItems()
     const report = buildReport(items, now, forcedAM)
-    // Per-member activity (status changes + edits) from the Dev Sprint board's
-    // activity log over the report window. Best-effort: never fail the report.
-    let logs: ActLog[] = []
-    try { logs = await fetchActivity(new Date(report.winStart).toISOString(), now.toISOString()) } catch { /* skip */ }
-    const members = buildMembers(report, logs)
+    // The 6 PM wrap-up gets the per-member section. Status changes come from the
+    // Dev Sprint board activity log (report window); commit counts from GitHub
+    // (since midnight ET = "that day"). Both best-effort: never fail the report.
+    let members: Member[] = []
+    if (!report.isAM) {
+      let logs: ActLog[] = []
+      try { logs = await fetchActivity(new Date(report.winStart).toISOString(), now.toISOString()) } catch { /* skip */ }
+      let commits: Record<string, number> = {}
+      try { commits = await fetchCommits(new Date(report.dayStart).toISOString(), now.toISOString()) } catch { /* skip */ }
+      members = buildMembers(report, logs, commits)
+    }
     const { subject, html, text } = render(report, members)
 
     // recipients: ?to= overrides (used for preview test); else REPORT_TO; else stakeholders
