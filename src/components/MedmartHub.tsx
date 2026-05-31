@@ -10,6 +10,25 @@ const pages: {
   icon: React.ReactNode
 }[] = [
   {
+    path: '/medmart/roadmap2026',
+    category: 'Strategy',
+    categoryColor: 'bg-gold/10 text-gold-light border-gold/20',
+    title: '2026 Growth Roadmap',
+    description: 'Conversion + design overhaul of medmartonline.com: an evidence-backed UX/sales audit (live funnel capture) with an interactive, checkable 30/60/90/120 roadmap, a business-vs-consumer funnel split, and a measurement plan.',
+    bullets: [
+      'Live funnel capture (prod → payment), desktop + mobile',
+      'Diagnosed P0: Add-to-Cart silently dies when its JS fails to bind',
+      'Interactive: cycle items To-do → Doing → Done, progress saved locally',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M3 3v18h18" />
+        <path d="M7 15l4-5 3 3 5-7" />
+        <circle cx="19" cy="6" r="1.5" />
+      </svg>
+    ),
+  },
+  {
     path: '/medmart/devops',
     category: 'Process',
     categoryColor: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
