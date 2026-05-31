@@ -46,6 +46,48 @@ const WHY_BULLETS: { title: string; detail: string }[] = [
   { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
 ]
 
+const LIFECYCLE: { n: number; key: string; title: string; detail: string; cmd?: string }[] = [
+  { n: 1, key: 'ticket',  title: 'Ticket',  detail: 'Start from a Monday.com Dev Sprint item. The ticket id becomes the branch prefix.' },
+  { n: 2, key: 'branch',  title: 'Branch',  detail: 'Cut a feature branch off the latest production (default lane).', cmd: 'git fetch origin && git switch -c MM-123-short-slug origin/production' },
+  { n: 3, key: 'build',   title: 'Build',   detail: 'Develop locally in Warden. Verify the change in a browser before pushing.' },
+  { n: 4, key: 'commit',  title: 'Commit',  detail: 'Conventional Commits + ticket reference in the message.', cmd: 'git commit -m "feat(checkout): add HSA field [MM-123]"' },
+  { n: 5, key: 'pr',      title: 'PR',      detail: 'Open a PR into staging (production for a hotfix, mm-supply for Supply work).' },
+  { n: 6, key: 'ci',      title: 'CI',      detail: 'Four gates run automatically: ticket check, conventional commits, PHPCS (changed lines), PHPStan.' },
+  { n: 7, key: 'review',  title: 'Review',  detail: 'Reviewer/Lead approves per CODEOWNERS. No self-merge of unreviewed code.' },
+  { n: 8, key: 'promote', title: 'Promote', detail: 'Merge to staging, QA on the Staging env. At release, merge staging → production; Release Owner pushes to Cloud.', cmd: 'git push magento production:production' },
+  { n: 9, key: 'verify',  title: 'Verify',  detail: 'Smoke-test critical paths on the target environment after deploy; watch logs.' },
+]
+
+function LifecycleStrip() {
+  const [open, setOpen] = useState(0)
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {LIFECYCLE.map((s, i) => (
+          <button
+            key={s.key}
+            onClick={() => setOpen(i)}
+            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors ${
+              open === i ? 'border-gold/40 bg-gold/10 text-gold' : 'border-border-subtle bg-card text-muted hover:text-ink'
+            }`}
+          >
+            <span className="font-mono">{s.n}</span>{s.title}
+          </button>
+        ))}
+      </div>
+      <Card className="mt-4">
+        <h3 className="font-display text-base text-ink">
+          {LIFECYCLE[open].n}. {LIFECYCLE[open].title}
+        </h3>
+        <p className="mt-1.5 text-sm text-muted">{LIFECYCLE[open].detail}</p>
+        {LIFECYCLE[open].cmd && (
+          <pre className="mt-3 overflow-x-auto rounded-lg bg-bg p-3 text-xs text-emerald-300">{LIFECYCLE[open].cmd}</pre>
+        )}
+      </Card>
+    </div>
+  )
+}
+
 const BRANCHES: { branch: string; env: string; job: string; tone: 'red' | 'gold' | 'sky' }[] = [
   { branch: 'production', env: 'Production', job: 'Source of truth = what is live. Protected. Only release merges + hotfixes land here.', tone: 'red' },
   { branch: 'staging',    env: 'Staging',    job: 'Release candidate. Prod-like. Holds only what ships next; reset from production each cycle so it never drifts.', tone: 'gold' },
@@ -225,8 +267,14 @@ export default function MedmartDevOps() {
             </Card>
           </section>
 
+          <section id="lifecycle" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Change lifecycle</h2>
+            <p className="mt-2 max-w-2xl text-muted">Nine stages from ticket to verified-live. Click a stage for the rule + commands.</p>
+            <div className="mt-5"><LifecycleStrip /></div>
+          </section>
+
           {/* placeholders — replaced in later tasks */}
-          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching').map((s) => (
+          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching' && s.id !== 'lifecycle').map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-10">
               <h2 className="font-display text-2xl text-ink">{s.label}</h2>
               <p className="mt-2 text-muted">Section content — built in later tasks.</p>
