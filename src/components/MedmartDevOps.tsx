@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 
 type SectionId =
   | 'why' | 'roles' | 'topology' | 'branching' | 'lifecycle'
-  | 'ci' | 'environments' | 'deploy' | 'hotfix-rollback'
+  | 'board' | 'ci' | 'environments' | 'deploy' | 'hotfix-rollback'
   | 'onboarding' | 'hardening'
 
 const SECTIONS: { id: SectionId; label: string }[] = [
@@ -14,6 +14,7 @@ const SECTIONS: { id: SectionId; label: string }[] = [
   { id: 'topology',         label: 'System topology' },
   { id: 'branching',        label: 'Branching model' },
   { id: 'lifecycle',        label: 'Change lifecycle' },
+  { id: 'board',            label: 'Sprint board & tracking' },
   { id: 'ci',               label: 'CI gates' },
   { id: 'environments',     label: 'Environments' },
   { id: 'deploy',           label: 'Deploy & promote' },
@@ -67,10 +68,10 @@ const ROLES: { seat: string; owns: string; held: string; tone: 'gold' | 'sky' | 
 ]
 
 const ONBOARDING: string[] = [
-  'GitHub access to Med-mart/mmr-web-m2.',
+  'GitHub access to Med-mart/mmr-web-m2 and the Monday.com Dev Sprint board.',
   'SSH key registered on Magento Cloud (for the magento remote).',
-  'Warden local environment running; auth.json credentials in place.',
-  'Conventions internalized: branch off production, MM-<id>-<slug>, Conventional Commits.',
+  'A working local Adobe Commerce dev environment — each developer owns their own local setup for now; auth.json credentials in place.',
+  'Conventions internalized: branch off production, type/mm-<id>-<slug> branch names, Conventional Commits.',
   'Bookmark this runbook.',
 ]
 const HARDENING: { title: string; detail: string }[] = [
@@ -89,7 +90,7 @@ const DEPLOY_STEPS: string[] = [
 const DEPLOY_CMD = 'git push magento staging:staging      # QA\ngit push magento production:production # go-live'
 
 const HOTFIX_STEPS: string[] = [
-  'Branch off production: git switch -c MM-###-hotfix origin/production',
+  'Branch off production: git switch -c fix/mm-###-hotfix-slug origin/production',
   'Expedited PR into production; CI still runs.',
   'Release Owner pushes production to Cloud.',
   'Back-merge production into staging and mm-supply so they stay current.',
@@ -109,22 +110,41 @@ const CI_GATES: { gate: string; catches: string; local: string; fix: string }[] 
 ]
 
 const ENVIRONMENTS: { name: string; branch: string; cloud: string; purpose: string; deployer: string }[] = [
-  { name: 'Local',       branch: 'feature branch', cloud: 'Warden (local)', purpose: 'build / verify',          deployer: 'Developer' },
+  { name: 'Local',       branch: 'feature branch', cloud: 'Local (dev-owned)', purpose: 'build / verify',        deployer: 'Developer' },
   { name: 'Staging',     branch: 'staging',        cloud: 'Staging',        purpose: 'release-candidate QA',     deployer: 'Release Owner' },
   { name: 'Production',  branch: 'production',      cloud: 'Production',     purpose: 'live store',               deployer: 'Release Owner' },
   { name: 'Integration', branch: 'mm-supply',      cloud: 'Development',     purpose: 'incubate Supply store',    deployer: 'Developer / Release Owner' },
 ]
 
 const LIFECYCLE: { n: number; key: string; title: string; detail: string; cmd?: string }[] = [
-  { n: 1, key: 'ticket',  title: 'Ticket',  detail: 'Start from a Monday.com Dev Sprint item. The ticket id becomes the branch prefix.' },
-  { n: 2, key: 'branch',  title: 'Branch',  detail: 'Cut a feature branch off the latest production (default lane).', cmd: 'git fetch origin && git switch -c MM-123-short-slug origin/production' },
-  { n: 3, key: 'build',   title: 'Build',   detail: 'Develop locally in Warden. Verify the change in a browser before pushing.' },
-  { n: 4, key: 'commit',  title: 'Commit',  detail: 'Conventional Commits + ticket reference in the message.', cmd: 'git commit -m "feat(checkout): add HSA field [MM-123]"' },
-  { n: 5, key: 'pr',      title: 'PR',      detail: 'Open a PR into staging (production for a hotfix, mm-supply for Supply work).' },
+  { n: 1, key: 'ticket',  title: 'Ticket',  detail: 'Start from a Monday.com Dev Sprint item (MM-##). Set Scope (mmo / mms / Global), log findings in Updates, and move it to Triage; a team member is assigned.' },
+  { n: 2, key: 'branch',  title: 'Branch',  detail: 'Create the branch from the Monday item (the GitHub integration auto-generates the name + posts the checkout commands) or locally — either way, cut it off production and record the name in the board Branch column. Move status to Working on it and start the Time Tracked timer.', cmd: 'git fetch origin && git switch -c fix/mm-98-pdp-page-slow origin/production' },
+  { n: 3, key: 'build',   title: 'Build',   detail: 'Develop in your own local environment (each dev owns their setup for now). Verify the change in a browser before pushing.' },
+  { n: 4, key: 'commit',  title: 'Commit',  detail: 'Conventional Commits + ticket reference in the message. The Branch Type (feat/fix) matches the commit type and branch prefix.', cmd: 'git commit -m "fix(pdp): lazy-load gallery to fix slow PDP load [MM-98]"' },
+  { n: 5, key: 'pr',      title: 'PR',      detail: 'Open a PR into staging (production for a hotfix, mm-supply for Supply work). Drop the PR link in the board PR Link column and move status to In Review; assign the reviewer.' },
   { n: 6, key: 'ci',      title: 'CI',      detail: 'Four gates run automatically: ticket check, conventional commits, PHPCS (changed lines), PHPStan.' },
   { n: 7, key: 'review',  title: 'Review',  detail: 'Reviewer/Lead approves per CODEOWNERS. No self-merge of unreviewed code.' },
-  { n: 8, key: 'promote', title: 'Promote', detail: 'Merge to staging, QA on the Staging env. At release, merge staging → production; Release Owner pushes to Cloud.', cmd: 'git push magento production:production' },
-  { n: 9, key: 'verify',  title: 'Verify',  detail: 'Smoke-test critical paths on the target environment after deploy; watch logs.' },
+  { n: 8, key: 'promote', title: 'Promote', detail: 'Merge to staging; status → Awaiting deployment. Release Owner pushes to Cloud; Environment auto-flips to Staging. After prod QA passes, status → Done and Environment → Production.', cmd: 'git push magento production:production' },
+  { n: 9, key: 'verify',  title: 'Verify',  detail: 'Tech lead assigns the PR owner to run prod QA. Smoke-test critical paths on the target environment after deploy; watch logs.' },
+]
+
+const STATUS_FLOW: { label: string; tone: 'muted' | 'gold' | 'sky' | 'emerald' | 'red'; when: string }[] = [
+  { label: 'Triage', tone: 'gold', when: 'Reporter logs findings + sets Scope; a team member is assigned.' },
+  { label: 'Working on it', tone: 'sky', when: 'Branch created; Time Tracked timer running.' },
+  { label: 'In Review', tone: 'sky', when: 'PR open; link dropped in the PR Link column; reviewer assigned.' },
+  { label: 'Awaiting deployment', tone: 'gold', when: 'Approved/merged; Release Owner deploys to staging.' },
+  { label: 'Done', tone: 'emerald', when: 'Prod QA passed; Environment → Production; assigned back to Ryan.' },
+]
+
+const BOARD_COLUMNS: { col: string; use: string }[] = [
+  { col: 'Scope', use: 'MedmartOnline (mmo) · MedmartSupply (mms) · Global — set at creation or during triage.' },
+  { col: 'Status', use: 'Drives the lifecycle (see flow above). Stuck flags a blocker.' },
+  { col: 'Time Tracked', use: 'Start the built-in timer while actively working the ticket; stop when you step away.' },
+  { col: 'Branch Type', use: 'feat or fix — matches the Conventional Commit type and the branch prefix.' },
+  { col: 'Branch', use: 'The git branch name, e.g. fix/mm-98-pdp-page-slow — always recorded here.' },
+  { col: 'PR Link', use: 'The GitHub PR URL, dropped in once the PR exists (shows In Review / Merged).' },
+  { col: 'Environment', use: 'Auto-updates Not Deployed → Local → Staging → Production as the item advances.' },
+  { col: 'Release', use: 'Which sprint the item ships in (Sprint 1, Sprint 2, …).' },
 ]
 
 function LifecycleStrip() {
@@ -179,7 +199,7 @@ function BranchFlowDiagram() {
       ))}
       {/* feature off production → staging */}
       <path d="M220,40 C220,80 300,90 300,120" className="fill-none stroke-muted" strokeWidth={1.5} markerEnd="url(#a)" />
-      <text x={150} y={78} className="fill-muted text-[9px]">cut MM-… off production</text>
+      <text x={150} y={78} className="fill-muted text-[9px]">cut fix/mm-… off production</text>
       {/* staging → production (release) */}
       <path d="M520,120 C520,80 600,75 600,40" className="fill-none stroke-emerald-400" strokeWidth={1.5} markerEnd="url(#a)" />
       <text x={520} y={100} className="fill-emerald-400 text-[9px]">release: staging → production</text>
@@ -203,7 +223,7 @@ function TopologyDiagram() {
     <svg viewBox="0 0 760 200" className="w-full" role="img" aria-label="System topology">
       {/* nodes */}
       {[
-        { x: 10,  t: 'Local', s: 'Warden' },
+        { x: 10,  t: 'Local', s: 'dev-owned' },
         { x: 160, t: 'GitHub', s: 'branches' },
         { x: 320, t: 'Cloud', s: '3 environments' },
         { x: 480, t: 'Fastly', s: 'CDN' },
@@ -372,10 +392,65 @@ export default function MedmartDevOps() {
             <div className="mt-5"><LifecycleStrip /></div>
           </section>
 
+          <section id="board" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Sprint board &amp; tracking</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              Every change lives on a <span className="text-ink">Monday.com Dev Sprint</span> item (<code className="text-gold">MM-##</code>).
+              The board is the single source of truth for status, time, and where the work is deployed — keep it current as you go.
+            </p>
+
+            <div className="mt-5 flex flex-wrap items-center gap-1.5">
+              {STATUS_FLOW.map((s, i) => (
+                <span key={s.label} className="flex items-center gap-1.5">
+                  <Pill tone={s.tone}>{s.label}</Pill>
+                  {i < STATUS_FLOW.length - 1 && <span className="text-muted">→</span>}
+                </span>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {STATUS_FLOW.map((s) => (
+                <p key={s.label} className="text-xs text-muted"><span className="text-ink">{s.label}:</span> {s.when}</p>
+              ))}
+            </div>
+
+            <Card className="mt-5 border-gold/30">
+              <h3 className="font-display text-base text-gold">Creating the branch — Monday or local, your choice</h3>
+              <p className="mt-1.5 text-sm text-muted">
+                Create it <span className="text-ink">from the Monday item</span> — the GitHub integration generates
+                <code className="mx-1 text-gold">type/mm-&lt;id&gt;-&lt;slug&gt;</code> and auto-comments the <code>git fetch</code> +
+                <code className="ml-1">git checkout</code> commands into the ticket — <span className="text-ink">or locally</span>.
+                Either way the rule is the same:
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-muted">
+                <li>• Record the branch name in the <span className="text-ink">Branch</span> column and set <span className="text-ink">Branch Type</span> (feat/fix).</li>
+                <li>• When the PR exists, drop its link in the <span className="text-ink">PR Link</span> column.</li>
+              </ul>
+            </Card>
+
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-left text-muted">
+                    <th className="py-2 pr-4 font-medium">Column</th>
+                    <th className="py-2 font-medium">What it's for</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {BOARD_COLUMNS.map((c) => (
+                    <tr key={c.col} className="border-b border-border-subtle/50 align-top">
+                      <td className="py-2.5 pr-4 text-ink whitespace-nowrap">{c.col}</td>
+                      <td className="py-2.5 text-muted">{c.use}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           <section id="ci" className="scroll-mt-10">
             <h2 className="font-display text-2xl text-ink">CI gates</h2>
             <p className="mt-2 max-w-2xl text-muted">
-              Every PR runs four checks on self-hosted runners (Warden PHP 8.2 image). Green is required to merge.
+              Every PR runs four checks on self-hosted runners (PHP 8.2). Green is required to merge.
             </p>
             <div className="mt-5 overflow-x-auto">
               <table className="w-full border-collapse text-sm">
