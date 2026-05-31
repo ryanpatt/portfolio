@@ -49,7 +49,7 @@ const P0S: Item[] = [
   {
     id: 'p0-atc',
     title: 'Email popup can cover the Add-to-Cart button — verify the real impact',
-    detail: 'Confirmed in testing: a Klaviyo email popup renders on top of the product buy box (39 overlay nodes sat over the Add-to-Cart button). The backend is healthy — a native form submit adds the item (302, cart populates). What is NOT yet confirmed: whether real users — especially on mobile, or before they dismiss the popup — are blocked from clicking the button. Earlier automated "dead button" results were the popup intercepting the click, not a proven code bug. Action: a 2-minute human test on prod (does cart/add fire after dismissing the popup?), then review popup timing/placement so it never overlaps the primary CTA, and confirm mobile behavior.',
+    detail: 'Confirmed in testing: a Klaviyo email popup renders on top of the product buy box (39 overlay nodes sat over the Add-to-Cart button). The backend is healthy — a native form submit adds the item (302, cart populates). What is NOT yet confirmed: whether real users — especially on mobile, or before they dismiss the popup — are blocked from clicking the button. Earlier automated "dead button" results were the popup intercepting the click, not a proven code bug. Action: a 2-minute human test on prod (does cart/add fire after dismissing the popup?). Recommended fix is to retire the blocking popup entirely and capture email the non-intrusive way — an always-on footer signup plus a checkout opt-in (both shown in the live demo) — so the Add-to-Cart is never covered, especially on mobile.',
     metric: 'ATC → cart success rate · popup bounce', effort: '½ day to verify', lift: 'Protects the primary CTA',
   },
   {
@@ -95,7 +95,7 @@ const ROADMAP: Phase[] = [
     id: 'd30', window: '0–30 days', theme: 'Stop the bleeding + instrument', tone: 'rose',
     blurb: 'Low-risk foundation: recover silent losses and get clean measurement before optimizing anything.',
     items: [
-      { id: 'r-atc', title: 'Verify Add-to-Cart vs the email popup; fix popup placement', detail: 'Confirm on prod whether the Klaviyo popup blocks the buy box for real users (mobile especially). Move popup timing/placement off the primary CTA; keep the backend native-submit path healthy.', metric: 'ATC success rate', effort: 'S', lift: 'Protects CTA' },
+      { id: 'r-atc', title: 'Replace the blocking email popup with non-blocking capture', detail: 'Retire the Klaviyo popup that can cover the Add-to-Cart button. Collect email the non-intrusive way instead — an always-on footer signup (“10% off your first order”) and a one-tap checkout opt-in (both shown in the live demo). Verify the CTA is never obscured, especially on mobile.', metric: 'ATC success rate · email capture rate', effort: 'S', lift: 'Protects CTA + grows list' },
       { id: 'r-pay', title: 'Pull Authnet approval rate; relax FDS if needed', detail: 'Confirm whether legit buyers are being declined post-fraud; loosen AVS/FDS accordingly.', metric: 'Approval %', effort: 'S', lift: 'Step-function' },
       { id: 'r-clarity', title: 'Install Microsoft Clarity (free) + verify GA4/GTM events', detail: 'Heatmaps + session replay to see WHY users leave; confirm ecommerce events fire end-to-end. Unblocks all measurement.', metric: 'Instrumentation', effort: 'S', lift: 'Enabler' },
       { id: 'r-testi', title: 'Fix the triple-rendered testimonials + dead scroll', detail: 'Remove the duplicated "Directly from our customers" blocks on home.', metric: 'Bounce / scroll depth', effort: 'S', lift: 'Polish' },
@@ -130,7 +130,7 @@ const ROADMAP: Phase[] = [
     items: [
       { id: 'r-flows', title: 'Lifecycle email + SMS flows in Klaviyo', detail: 'Abandoned cart, browse-abandon, post-purchase, win-back, B2B nurture.', metric: 'Revenue/visitor, repeat rate', effort: 'L', lift: '[est] +8–15%' },
       { id: 'r-perso', title: 'Personalization & merchandising', detail: 'Best-seller/bundle logic, financing-forward messaging.', metric: 'AOV, attach rate', effort: 'M', lift: '[est] +3–8%' },
-      { id: 'r-capture', title: 'Lead-capture for not-ready buyers (reason + 10% off)', detail: 'Capture the objection and the email when a visitor isn’t ready; feed the Klaviyo nurture. Built in the live demo.', metric: 'Email capture rate, return-to-buy', effort: 'S', lift: 'List growth + recovery' },
+      { id: 'r-capture', title: 'PDP “Not ready to buy?” offer — capture the objection + 10% off', detail: 'On every product page, a no-pressure offer: pick what’s holding you back (comparing, price, fit, asking family, browsing), drop an email, get 10% off for when you’re ready — plus a specialist follow-up. Captures the email AND the reason (the “why people hesitate” data), then feeds the Klaviyo nurture. Most high-AOV buyers convert within ~2 weeks of first asking. Built in the live demo (PDP).', metric: 'Email capture rate, reason mix, return-to-buy', effort: 'S', lift: 'List growth + recovery' },
       { id: 'r-ab', title: 'Formal A/B testing program', detail: 'PDP, checkout, home hero — structured experiments.', metric: 'Validated lift / test', effort: 'M', lift: 'Compounding' },
       { id: 'r-loop', title: 'Continuous CRO loop + monthly scorecard', detail: 'Clarity/GA4-driven; a standing monthly review of the KPI scorecard.', metric: 'Program velocity', effort: 'S', lift: 'Compounding' },
     ],
@@ -485,6 +485,8 @@ export default function MedmartRoadmap2026() {
                 { to: '/medmart/demo-store/cart', t: 'Cart', d: 'Line items, summary, financing reminder' },
                 { to: '/medmart/demo-store/checkout', t: 'Checkout', d: 'Reassurance rail → order confirmation' },
                 { to: '/medmart/demo-store/business', t: 'Business / B2B', d: 'Quote, Net-30, tax-exempt, volume pricing' },
+                { to: '/medmart/demo-store?finder=1', t: 'Guided product finder', d: 'Top categories → 2 questions → recommendation' },
+                { to: '/medmart/demo-store/product/golden-buzzaround-hd#not-ready', t: '“Not ready?” 10% capture', d: 'Capture the objection + email when a visitor isn’t ready' },
               ].map(l => (
                 <Link key={l.to} to={l.to} className="group flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/5 p-4 transition-colors hover:bg-gold/10">
                   <span>

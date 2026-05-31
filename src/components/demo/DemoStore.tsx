@@ -89,6 +89,22 @@ function TrustBar() {
   )
 }
 
+function NewsletterSignup() {
+  const [email, setEmail] = useState('')
+  const [done, setDone] = useState(false)
+  if (done) return (
+    <div className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 text-sm text-white">
+      <Icon name="check" className="h-5 w-5 text-emerald-300" /> You’re in — your 10% code is on its way.
+    </div>
+  )
+  return (
+    <div className="flex w-full max-w-md gap-2">
+      <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Your email address" className="flex-1 rounded-lg border border-white/20 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400" />
+      <button onClick={() => setDone(true)} className="shrink-0 rounded-lg bg-[#0076bc] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#005f96]">Subscribe</button>
+    </div>
+  )
+}
+
 function Footer() {
   const cols: { h: string; links: string[] }[] = [
     { h: 'Customer Service', links: ['Shipping Policy', 'Returns', 'Order Tracking', 'Contact Us'] },
@@ -98,6 +114,15 @@ function Footer() {
   ]
   return (
     <footer className="mt-16 border-t border-slate-200 bg-slate-900 text-slate-300">
+      <div className="border-b border-white/10 bg-[#1c3251]">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-7 lg:flex-row">
+          <div className="text-center lg:text-left">
+            <div className="font-display text-lg font-bold text-white">Get 10% off your first order</div>
+            <div className="text-sm text-blue-100">Join for new arrivals, savings, and expert tips. No spam — unsubscribe anytime.</div>
+          </div>
+          <NewsletterSignup />
+        </div>
+      </div>
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-12 md:grid-cols-4">
         {cols.map(c => (
           <div key={c.h}>
@@ -621,7 +646,7 @@ function NotReadyForm() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   return (
-    <section className="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <section id="not-ready" className="mt-10 scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <div className="grid lg:grid-cols-[1.3fr_1fr]">
         <div className="p-6 sm:p-8">
           {!sent ? (
@@ -693,6 +718,10 @@ function Checkout() {
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="font-display text-lg font-semibold text-slate-900">Contact</h2>
             <div className="mt-3"><Field label="Email address" placeholder="you@email.com" /></div>
+            <label className="mt-3 flex items-start gap-2.5 rounded-lg bg-[#e6f1f8] p-3 text-sm text-slate-700">
+              <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border border-[#0076bc] bg-[#0076bc] text-white"><Icon name="check" className="h-3 w-3" /></span>
+              <span>Email me order updates and exclusive offers — and take <strong>10% off</strong> my next order. <span className="text-slate-400">(Unsubscribe anytime.)</span></span>
+            </label>
           </section>
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="font-display text-lg font-semibold text-slate-900">Shipping address</h2>
@@ -991,6 +1020,7 @@ function FinderButton({ className = '', children }: { className?: string; childr
 
 export default function DemoStore() {
   const [finderOpen, setFinderOpen] = useState(false)
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('finder') === '1') setFinderOpen(true) }, [])
   return (
     <CartProvider>
       <FinderCtx.Provider value={{ open: () => setFinderOpen(true) }}>
