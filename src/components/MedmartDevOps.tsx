@@ -241,7 +241,9 @@ export default function MedmartDevOps() {
   useEffect(() => {
     const obs = new IntersectionObserver(
       (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting)
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
         if (visible.length) setActive(visible[0].target.id as SectionId)
       },
       { rootMargin: '-30% 0px -60% 0px', threshold: 0 },
@@ -272,6 +274,7 @@ export default function MedmartDevOps() {
               <li key={s.id}>
                 <a
                   href={`#${s.id}`}
+                  aria-current={active === s.id ? 'true' : undefined}
                   className={`block rounded px-3 py-1.5 transition-colors ${
                     active === s.id ? 'bg-card text-gold' : 'text-muted hover:text-ink'
                   }`}
