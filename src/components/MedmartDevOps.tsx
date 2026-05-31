@@ -38,12 +38,46 @@ function Pill({ children, tone = 'gold' }: { children: React.ReactNode; tone?: '
   return <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs ${tones[tone]}`}>{children}</span>
 }
 
+function Steps({ items }: { items: string[] }) {
+  return (
+    <ol className="mt-3 space-y-2 text-sm text-muted">
+      {items.map((it, i) => (
+        <li key={i} className="flex gap-3">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-card text-xs text-gold">{i + 1}</span>
+          <span>{it}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 const WHY_BULLETS: { title: string; detail: string }[] = [
   { title: 'Nothing breaks production by surprise', detail: 'Every change passes CI and a review, gets QA on a prod-like environment, and is deployed deliberately by one owner — not pushed ad hoc.' },
   { title: 'A new dev ships on day one', detail: 'The path from ticket to live is written down: same branch names, same gates, same deploy steps every time.' },
   { title: 'The unreleased Supply store stays isolated', detail: 'Long-lived work lives on its own branch + environment, so weekly releases to the live store are never blocked or contaminated by it.' },
   { title: 'Every change is auditable', detail: 'Conventional commits + ticket references + tagged releases mean you can answer "what shipped, when, and why" in seconds.' },
   { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
+]
+
+const DEPLOY_STEPS: string[] = [
+  'Merge the PR on GitHub — nothing happens on Cloud yet (no GitHub→Cloud integration).',
+  'Release Owner pushes the branch to the Cloud git remote (triggers build + deploy).',
+  'Cloud auto-builds + deploys (~9 min; brief stop/start downtime mid-deploy).',
+  'Run the post-deploy smoke test on the target environment; watch logs.',
+]
+const DEPLOY_CMD = 'git push magento staging:staging      # QA\ngit push magento production:production # go-live'
+
+const HOTFIX_STEPS: string[] = [
+  'Branch off production: git switch -c MM-###-hotfix origin/production',
+  'Expedited PR into production; CI still runs.',
+  'Release Owner pushes production to Cloud.',
+  'Back-merge production into staging and mm-supply so they stay current.',
+]
+const ROLLBACK_STEPS: string[] = [
+  'Identify the last known-good commit on the target branch.',
+  'Redeploy it: push the prior SHA to the Cloud env, or use Magento Cloud environment rollback.',
+  'Same ~9 min + brief downtime applies.',
+  'Caution: DB migrations are NOT auto-reversed — treat schema changes as higher-risk and plan a forward-fix.',
 ]
 
 const CI_GATES: { gate: string; catches: string; local: string; fix: string }[] = [
@@ -348,8 +382,30 @@ export default function MedmartDevOps() {
             </div>
           </section>
 
+          <section id="deploy" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Deploy & promote</h2>
+            <p className="mt-2 max-w-2xl text-muted">Deploying is a deliberate, owned act — not a side effect of merging.</p>
+            <Card className="mt-5"><Steps items={DEPLOY_STEPS} /></Card>
+            <pre className="mt-4 overflow-x-auto rounded-lg bg-bg p-3 text-xs text-emerald-300 whitespace-pre">{DEPLOY_CMD}</pre>
+            <p className="mt-2 text-xs text-muted">Cloud remote: <code>tin2rimoygcaq@git.us-5.magento.cloud:tin2rimoygcaq.git</code> (the <code>magento</code> remote).</p>
+          </section>
+
+          <section id="hotfix-rollback" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">Hotfix & rollback</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <Card>
+                <div className="flex items-center gap-2"><Pill tone="red">Hotfix</Pill><span className="text-sm text-muted">urgent prod fix</span></div>
+                <Steps items={HOTFIX_STEPS} />
+              </Card>
+              <Card>
+                <div className="flex items-center gap-2"><Pill tone="muted">Rollback</Pill><span className="text-sm text-muted">undo a bad deploy</span></div>
+                <Steps items={ROLLBACK_STEPS} />
+              </Card>
+            </div>
+          </section>
+
           {/* placeholders — replaced in later tasks */}
-          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching' && s.id !== 'lifecycle' && s.id !== 'ci' && s.id !== 'environments').map((s) => (
+          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology' && s.id !== 'branching' && s.id !== 'lifecycle' && s.id !== 'ci' && s.id !== 'environments' && s.id !== 'deploy' && s.id !== 'hotfix-rollback').map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-10">
               <h2 className="font-display text-2xl text-ink">{s.label}</h2>
               <p className="mt-2 text-muted">Section content — built in later tasks.</p>
