@@ -46,6 +46,46 @@ const WHY_BULLETS: { title: string; detail: string }[] = [
   { title: 'The pipeline survives people leaving', detail: 'Responsibilities are seats (Developer, Reviewer/Lead, Release Owner), not individuals — hand-off is a name change, not a rebuild.' },
 ]
 
+function TopologyDiagram() {
+  const box = 'fill-card stroke-border-subtle'
+  const label = 'fill-ink text-[11px] font-medium'
+  const sub = 'fill-muted text-[9px]'
+  return (
+    <svg viewBox="0 0 760 200" className="w-full" role="img" aria-label="System topology">
+      {/* nodes */}
+      {[
+        { x: 10,  t: 'Local', s: 'Warden' },
+        { x: 160, t: 'GitHub', s: 'branches' },
+        { x: 320, t: 'Cloud', s: '3 environments' },
+        { x: 480, t: 'Fastly', s: 'CDN' },
+        { x: 630, t: 'Users', s: 'storefront' },
+      ].map((n) => (
+        <g key={n.t}>
+          <rect x={n.x} y={70} width={120} height={56} rx={8} className={box} strokeWidth={1.5} />
+          <text x={n.x + 60} y={94} textAnchor="middle" className={label}>{n.t}</text>
+          <text x={n.x + 60} y={110} textAnchor="middle" className={sub}>{n.s}</text>
+        </g>
+      ))}
+      {/* solid links */}
+      {[130, 600].map((x1, i) => (
+        <line key={i} x1={x1} y1={98} x2={x1 + 30} y2={98} className="stroke-muted" strokeWidth={1.5} markerEnd="url(#arrow)" />
+      ))}
+      <line x1={440} y1={98} x2={470} y2={98} className="stroke-muted" strokeWidth={1.5} markerEnd="url(#arrow)" />
+      {/* dashed manual-push gap GitHub→Cloud */}
+      <line x1={290} y1={98} x2={310} y2={98} className="stroke-red-400" strokeWidth={2} strokeDasharray="4 3" markerEnd="url(#arrowred)" />
+      <text x={300} y={150} textAnchor="middle" className="fill-red-400 text-[9px]">manual push — no auto-deploy</text>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6" className="fill-none stroke-muted" strokeWidth={1.5} />
+        </marker>
+        <marker id="arrowred" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6" className="fill-none stroke-red-400" strokeWidth={1.5} />
+        </marker>
+      </defs>
+    </svg>
+  )
+}
+
 export default function MedmartDevOps() {
   void Pill // temporary: keeps the build green until Pill is used in a later task
   const [active, setActive] = useState<SectionId>('why')
@@ -112,8 +152,18 @@ export default function MedmartDevOps() {
             </div>
           </section>
 
+          <section id="topology" className="scroll-mt-10">
+            <h2 className="font-display text-2xl text-ink">System topology</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              Code flows left to right. The one thing to internalize: there is <span className="text-red-400">no GitHub→Cloud
+              integration</span> — a merged PR does not deploy. Someone in the Release Owner seat must push the branch to the
+              Cloud git remote to trigger a build.
+            </p>
+            <Card className="mt-5"><TopologyDiagram /></Card>
+          </section>
+
           {/* placeholders — replaced in later tasks */}
-          {SECTIONS.filter((s) => s.id !== 'why').map((s) => (
+          {SECTIONS.filter((s) => s.id !== 'why' && s.id !== 'topology').map((s) => (
             <section key={s.id} id={s.id} className="scroll-mt-10">
               <h2 className="font-display text-2xl text-ink">{s.label}</h2>
               <p className="mt-2 text-muted">Section content — built in later tasks.</p>
