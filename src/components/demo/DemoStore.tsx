@@ -3,7 +3,7 @@
 // with a shared cart. Mounted at /medmart/demo-store/* . Nothing is submitted.
 import { useState, useEffect, useMemo, createContext, useContext } from 'react'
 import { Routes, Route, Outlet, Link, useParams, useNavigate, useLocation } from 'react-router-dom'
-import { CATEGORIES, PRODUCTS, productBySlug, productsByCategory, monthly, usd, type Product } from './catalog'
+import { CATEGORIES, PRODUCTS, productBySlug, productsByCategory, categoryImages, monthly, usd, type Product } from './catalog'
 import { Icon, Stars, ProductImage, CartProvider, useCart, storeUrl } from './storeUi'
 
 /* ---- guided product finder (modal, opened from header / home / category) ---- */
@@ -138,7 +138,7 @@ function ProductCard({ p }: { p: Product }) {
         {p.overallPick
           ? <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded bg-[#0076bc] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"><Icon name="badge" className="h-3.5 w-3.5" /> Overall Pick</span>
           : p.bestSeller && <span className="absolute left-2 top-2 z-10 rounded bg-[#e3252b] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Best Seller</span>}
-        <ProductImage hue={p.hue} label={p.name} className="aspect-[4/3]" />
+        <ProductImage hue={p.hue} label={p.name} src={p.img} className="aspect-[4/3]" />
       </Link>
       <div className="flex flex-1 flex-col p-4">
         <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{p.brand}</div>
@@ -236,7 +236,7 @@ function Home() {
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {CATEGORIES.map(c => (
             <Link key={c.slug} to={storeUrl('/shop/' + c.slug)} className="group overflow-hidden rounded-xl border border-slate-200 bg-white transition-shadow hover:shadow-md">
-              <ProductImage hue={c.hue} label={c.name} className="aspect-square" />
+              <ProductImage hue={c.hue} label={c.name} src={categoryImages(c.slug)[0]} className="aspect-square" />
               <div className="p-3"><div className="text-sm font-semibold text-slate-900">{c.name}</div><div className="text-xs text-slate-500">{c.tagline}</div></div>
             </Link>
           ))}
@@ -485,8 +485,8 @@ function Product() {
       <div className="mt-5 grid gap-8 lg:grid-cols-2">
         {/* gallery */}
         <div>
-          <ProductImage hue={p.hue} label={p.name} className="aspect-[4/3] rounded-2xl border border-slate-200" />
-          <div className="mt-3 grid grid-cols-4 gap-3">{[0, 1, 2, 3].map(i => <ProductImage key={i} hue={p.hue + i * 6} label={'view ' + (i + 1)} className="aspect-square cursor-pointer rounded-lg border border-slate-200" />)}</div>
+          <ProductImage hue={p.hue} label={p.name} src={p.img} className="aspect-[4/3] rounded-2xl border border-slate-200" />
+          <div className="mt-3 grid grid-cols-4 gap-3">{[0, 1, 2, 3].map(i => <ProductImage key={i} hue={p.hue} label={'view ' + (i + 1)} src={categoryImages(p.category)[i % 3]} className="aspect-square cursor-pointer rounded-lg border border-slate-200" />)}</div>
         </div>
         {/* buy box */}
         <div>
@@ -550,7 +550,7 @@ function Product() {
             <h3 className="font-display text-base font-semibold text-slate-900">Frequently bought together</h3>
             <div className="mt-3 space-y-3">{fbt.map(f => (
               <Link key={f.slug} to={storeUrl('/product/' + f.slug)} className="flex items-center gap-3">
-                <ProductImage hue={f.hue} label={f.name} className="h-14 w-14 shrink-0 rounded-lg" />
+                <ProductImage hue={f.hue} label={f.name} src={f.img} className="h-14 w-14 shrink-0 rounded-lg" />
                 <div className="min-w-0"><div className="truncate text-sm font-medium text-slate-900">{f.name}</div><div className="text-sm text-slate-500">{usd(f.price)}</div></div>
               </Link>
             ))}</div>
@@ -579,7 +579,7 @@ function Cart() {
         <div className="space-y-4">
           {lines.map(l => (
             <div key={l.slug} className="flex gap-4 rounded-xl border border-slate-200 bg-white p-4">
-              <ProductImage hue={l.p.hue} label={l.p.name} className="h-24 w-24 shrink-0 rounded-lg" />
+              <ProductImage hue={l.p.hue} label={l.p.name} src={l.p.img} className="h-24 w-24 shrink-0 rounded-lg" />
               <div className="flex flex-1 flex-col">
                 <div className="flex justify-between gap-3">
                   <Link to={storeUrl('/product/' + l.slug)} className="text-sm font-semibold text-slate-900 hover:text-[#1c3251]">{l.p.name}</Link>
@@ -680,7 +680,7 @@ function Checkout() {
   const lines = items.map(l => ({ ...l, p: productBySlug(l.slug)! })).filter(l => l.p)
   if (!lines.length) { return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-slate-500">Your cart is empty. <Link to={storeUrl('/shop')} className="text-[#0076bc] underline">Shop now</Link></main> }
   const place = () => {
-    try { sessionStorage.setItem('mm-demo-order', JSON.stringify({ lines: lines.map(l => ({ name: l.p.name, qty: l.qty, price: l.p.price, hue: l.p.hue })), subtotal })) } catch { /* ignore */ }
+    try { sessionStorage.setItem('mm-demo-order', JSON.stringify({ lines: lines.map(l => ({ name: l.p.name, qty: l.qty, price: l.p.price, hue: l.p.hue, img: l.p.img })), subtotal })) } catch { /* ignore */ }
     clear()
     nav(storeUrl('/confirmation'))
   }
@@ -727,7 +727,7 @@ function Checkout() {
             <h2 className="font-display text-lg font-semibold text-slate-900">Order summary</h2>
             <div className="mt-3 space-y-3">{lines.map(l => (
               <div key={l.slug} className="flex items-center gap-3">
-                <ProductImage hue={l.p.hue} label={l.p.name} className="h-12 w-12 shrink-0 rounded-lg" />
+                <ProductImage hue={l.p.hue} label={l.p.name} src={l.p.img} className="h-12 w-12 shrink-0 rounded-lg" />
                 <div className="min-w-0 flex-1 text-sm"><div className="truncate font-medium text-slate-900">{l.p.name}</div><div className="text-slate-500">Qty {l.qty}</div></div>
                 <div className="text-sm font-semibold">{usd(l.p.price * l.qty)}</div>
               </div>
@@ -752,7 +752,7 @@ function Checkout() {
 }
 
 function Confirmation() {
-  type Order = { lines: { name: string; qty: number; price: number; hue: number }[]; subtotal: number }
+  type Order = { lines: { name: string; qty: number; price: number; hue: number; img?: string }[]; subtotal: number }
   const [order, setOrder] = useState<Order | null>(null)
   useEffect(() => { try { const o = sessionStorage.getItem('mm-demo-order'); if (o) setOrder(JSON.parse(o)) } catch { /* ignore */ } }, [])
   return (
@@ -766,7 +766,7 @@ function Confirmation() {
           <div className="mt-6 space-y-3 text-left">
             {order.lines.map((l, i) => (
               <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
-                <ProductImage hue={l.hue} label={l.name} className="h-14 w-14 shrink-0 rounded-lg" />
+                <ProductImage hue={l.hue} label={l.name} src={l.img} className="h-14 w-14 shrink-0 rounded-lg" />
                 <div className="min-w-0 flex-1 text-sm"><div className="truncate font-medium text-slate-900">{l.name}</div><div className="text-slate-500">Qty {l.qty}</div></div>
                 <div className="text-sm font-semibold">{usd(l.price * l.qty)}</div>
               </div>
@@ -911,7 +911,7 @@ function ProductFinder({ open, onClose }: { open: boolean; onClose: () => void }
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {CATEGORIES.map(c => (
                   <button key={c.slug} onClick={() => { setCatSlug(c.slug); goTo(1) }} className="group overflow-hidden rounded-xl border border-slate-200 text-left transition-shadow hover:shadow-md">
-                    <ProductImage hue={c.hue} label={c.name} className="aspect-[5/3]" />
+                    <ProductImage hue={c.hue} label={c.name} src={categoryImages(c.slug)[0]} className="aspect-[5/3]" />
                     <div className="p-2.5"><div className="text-sm font-semibold text-slate-900">{c.name}</div><div className="text-xs text-slate-500">{c.tagline}</div></div>
                   </button>
                 ))}
@@ -949,7 +949,7 @@ function ProductFinder({ open, onClose }: { open: boolean; onClose: () => void }
               <>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#0076bc]"><Icon name="badge" className="h-5 w-5" /> Our recommendation for you</div>
                 <div className="mt-3 flex flex-col gap-4 rounded-xl border border-slate-200 p-4 sm:flex-row">
-                  <ProductImage hue={top.hue} label={top.name} className="aspect-[4/3] w-full shrink-0 rounded-lg sm:w-44" />
+                  <ProductImage hue={top.hue} label={top.name} src={top.img} className="aspect-[4/3] w-full shrink-0 rounded-lg sm:w-44" />
                   <div className="flex flex-1 flex-col">
                     <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{top.brand}</div>
                     <div className="font-display text-lg font-bold text-slate-900">{top.name}</div>
@@ -964,7 +964,7 @@ function ProductFinder({ open, onClose }: { open: boolean; onClose: () => void }
                 </div>
                 {alt && (
                   <button onClick={() => go(storeUrl('/product/' + alt.slug))} className="mt-3 flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left hover:border-[#0076bc]">
-                    <ProductImage hue={alt.hue} label={alt.name} className="h-12 w-12 shrink-0 rounded-lg" />
+                    <ProductImage hue={alt.hue} label={alt.name} src={alt.img} className="h-12 w-12 shrink-0 rounded-lg" />
                     <div className="min-w-0 flex-1"><div className="text-xs text-slate-400">Also consider</div><div className="truncate text-sm font-medium text-slate-900">{alt.name}</div></div>
                     <div className="text-sm font-semibold text-slate-900">{usd(alt.price)}</div>
                   </button>

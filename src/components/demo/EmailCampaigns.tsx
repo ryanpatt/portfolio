@@ -63,10 +63,10 @@ function EmailFrame({ preheader, children }: { preheader: string; children: Reac
 }
 
 /* ------- reusable email content blocks ------- */
-function ProductBlock({ name, price, mo, rating, reviews, hue }: { name: string; price: string; mo: string; rating: number; reviews: number; hue: number }) {
+function ProductBlock({ name, price, mo, rating, reviews, hue, img }: { name: string; price: string; mo: string; rating: number; reviews: number; hue: number; img?: string }) {
   return (
     <div className="flex gap-4 rounded-xl border border-slate-200 p-3">
-      <ProductImage hue={hue} label={name} className="h-24 w-24 shrink-0 rounded-lg" />
+      <ProductImage hue={hue} label={name} src={img} className="h-24 w-24 shrink-0 rounded-lg" />
       <div className="flex flex-1 flex-col">
         <div className="text-sm font-semibold text-slate-900">{name}</div>
         <div className="mt-1 flex items-center gap-1.5"><Stars rating={rating} className="h-4 w-4" /><span className="text-xs text-slate-500">{rating} ({reviews})</span></div>
@@ -91,7 +91,7 @@ const ABANDONED: Campaign = {
         <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">We saved your cart. Whether it’s fit, financing or delivery on your mind, a real specialist can help in minutes.</p>
       </div>
       <div className="px-6">
-        <ProductBlock name="Golden Buzzaround HD Mobility Scooter" price="$1,899" mo="$79" rating={4.9} reviews={214} hue={205} />
+        <ProductBlock name="Golden Buzzaround HD Mobility Scooter" price="$1,899" mo="$79" rating={4.9} reviews={214} hue={205} img="/medmart/demo-store/products/mobility-scooters-1.jpg" />
         <div className="mt-5 text-center"><Btn>Complete your order</Btn></div>
         <p className="mt-3 text-center text-xs text-slate-400">Free shipping · 30-day returns · price-match guarantee</p>
       </div>
@@ -111,7 +111,7 @@ const NEW_ARRIVALS: Campaign = {
   body: (
     <>
       <div className="text-center" style={{ background: NAVY }}>
-        <ProductImage hue={205} label="New mobility scooters" className="aspect-[16/7] w-full" />
+        <ProductImage hue={205} label="New mobility scooters" src="/medmart/demo-store/products/mobility-scooters-3.jpg" className="aspect-[16/7] w-full" />
         <div className="px-6 py-6">
           <div className="text-xs font-semibold uppercase tracking-widest text-[#7fc3e8]">New for 2026</div>
           <h1 className="mt-1 font-display text-2xl font-extrabold text-white">Fresh arrivals in Mobility Scooters</h1>
@@ -120,8 +120,8 @@ const NEW_ARRIVALS: Campaign = {
         </div>
       </div>
       <div className="space-y-3 px-6 py-7">
-        <ProductBlock name="Pride Go-Go Sport 4-Wheel Scooter" price="$1,299" mo="$54" rating={4.7} reviews={156} hue={212} />
-        <ProductBlock name="Golden Buzzaround HD Mobility Scooter" price="$1,899" mo="$79" rating={4.9} reviews={214} hue={205} />
+        <ProductBlock name="Pride Go-Go Sport 4-Wheel Scooter" price="$1,299" mo="$54" rating={4.7} reviews={156} hue={212} img="/medmart/demo-store/products/mobility-scooters-2.jpg" />
+        <ProductBlock name="Golden Buzzaround HD Mobility Scooter" price="$1,899" mo="$79" rating={4.9} reviews={214} hue={205} img="/medmart/demo-store/products/mobility-scooters-1.jpg" />
         <div className="text-center"><Btn color={NAVY}>See everything new</Btn></div>
       </div>
     </>
@@ -193,7 +193,7 @@ const WINBACK: Campaign = {
       </div>
       <div className="space-y-3 px-6 py-7">
         <div className="text-center text-sm font-semibold text-slate-700">Picked for you</div>
-        <ProductBlock name="Golden MaxiComfort Lift Chair" price="$1,749" mo="$73" rating={4.8} reviews={389} hue={25} />
+        <ProductBlock name="Golden MaxiComfort Lift Chair" price="$1,749" mo="$73" rating={4.8} reviews={389} hue={25} img="/medmart/demo-store/products/lift-chairs-1.jpg" />
       </div>
     </>
   ),

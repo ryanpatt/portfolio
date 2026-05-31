@@ -49,8 +49,15 @@ export function Stars({ rating, className = 'h-4 w-4' }: { rating: number; class
   )
 }
 
-// Deterministic gradient placeholder standing in for a product photo.
-export function ProductImage({ hue, label, className = '' }: { hue: number; label: string; className?: string }) {
+// Real product photo when `src` is given; deterministic gradient placeholder otherwise.
+export function ProductImage({ hue, label, src, className = '' }: { hue: number; label: string; src?: string; className?: string }) {
+  if (src) {
+    return (
+      <div className={`relative overflow-hidden bg-white ${className}`}>
+        <img src={src} alt={label} loading="lazy" decoding="async" className="h-full w-full object-contain" />
+      </div>
+    )
+  }
   return (
     <div
       className={`relative grid place-items-center overflow-hidden ${className}`}
