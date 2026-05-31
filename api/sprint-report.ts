@@ -25,9 +25,12 @@ const COL = {
   sp: 'numeric_mm3bjq3m',
   tt: 'duration_mm3be8w6',
 }
+// Team tracked in the "by team member" activity section + hours. TEAM_ORDER
+// fixes display order (JS reorders numeric-string object keys, so don't rely on it).
+const TEAM_ORDER = ['104228757', '96592612', '97246569', '101693627']
 const NAMED: Record<string, string> = {
-  '97246569': 'Anna', '101771375': 'Max', '96592612': 'Faisal',
-  '66578488': 'Musab', '101693627': 'Adriana',
+  '104228757': 'Tu Van', '96592612': 'Faisal',
+  '97246569': 'Anna', '101693627': 'Adriana',
 }
 const INPROGRESS = new Set(['Working on it', 'In Review', 'Stuck'])
 const GATES = new Set(['Deployed/Ready for QA', 'Final QA', 'TBD:Staging', 'TBD:Prod'])
@@ -39,7 +42,11 @@ type Item = {
   st: { text: string | null }[]; sc: { text: string | null }[]
   asg: { text: string | null }[]; sp: { text: string | null }[]
   tt: { history?: { started_user_id: string; started_at: string; ended_at: string | null }[] }[]
+  updates?: { creator_id: string; created_at: string }[]
 }
+
+// One activity-log event on the Dev Sprint board (status changes, edits, etc.).
+type ActLog = { event: string; created_at: string; user_id: string | number; data: string }
 
 async function monday<T>(query: string, variables: Record<string, unknown>): Promise<T> {
   const token = process.env.MONDAY_TOKEN
@@ -71,6 +78,7 @@ async function fetchItems(): Promise<Item[]> {
     asg:column_values(ids:["${COL.assignee}"]){text}
     sp:column_values(ids:["${COL.sp}"]){text}
     tt:column_values(ids:["${COL.tt}"]){ ... on TimeTrackingValue { history{started_user_id started_at ended_at} } }
+    updates(limit:5){creator_id created_at}
   }}}}`
   const items: Item[] = []
   let cursor: string | null = null
@@ -81,6 +89,14 @@ async function fetchItems(): Promise<Item[]> {
     cursor = page.cursor
   } while (cursor)
   return items
+}
+
+// Activity log for the Dev Sprint board over [fromISO, toISO]. Single board only.
+async function fetchActivity(fromISO: string, toISO: string): Promise<ActLog[]> {
+  const q = `query($b:ID!,$f:ISO8601DateTime!,$t:ISO8601DateTime!){boards(ids:[$b]){
+    activity_logs(from:$f,to:$t,limit:500){event created_at user_id data}}}`
+  const d: any = await monday(q, { b: BOARD, f: fromISO, t: toISO })
+  return d.boards[0].activity_logs || []
 }
 
 // ── ET / DST helpers ────────────────────────────────────────────────────────
@@ -127,7 +143,8 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
   const doneToday: { t: number; name: string; asg: string }[] = []
   const recent: { t: number; st: string; name: string }[] = []
   const ttToday: Record<string, number> = {}, ttWeek: Record<string, number> = {}
-  for (const k of Object.keys(NAMED)) { ttToday[k] = 0; ttWeek[k] = 0 }
+  const notesByUser: Record<string, { t: number; name: string }[]> = {}
+  for (const k of Object.keys(NAMED)) { ttToday[k] = 0; ttWeek[k] = 0; notesByUser[k] = [] }
 
   for (const it of items) {
     const st = one(it.st) || '—', sc = one(it.sc) || '—', asg = one(it.asg) || ''
@@ -155,6 +172,11 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
       if (s >= dayStart) ttToday[uid] += dur
       if (s >= weekStart) ttWeek[uid] += dur
     }
+    for (const up of it.updates || []) {
+      const cid = String(up.creator_id)
+      const t = Date.parse(up.created_at)
+      if (cid in NAMED && t >= winStart) notesByUser[cid].push({ t, name: it.name })
+    }
   }
   const byAge = (a: Row, b: Row) => b.age - a.age
   const stIdx = (s: string) => { const i = STATUS_ORDER.indexOf(s); return i < 0 ? 99 : i }
@@ -162,7 +184,40 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
   active.sort((a, b) => stIdx(a.st) - stIdx(b.st) || b.age - a.age)
   doneToday.sort((a, b) => b.t - a.t)
   recent.sort((a, b) => b.t - a.t)
-  return { now, isAM, winStart, statusCt, scopeCt, stale, hung, active, doneToday, recent, ttToday, ttWeek, total: items.length, STALE_BASE, SP_GRACE_MIN }
+  return { now, isAM, winStart, statusCt, scopeCt, stale, hung, active, doneToday, recent, ttToday, ttWeek, notesByUser, total: items.length, STALE_BASE, SP_GRACE_MIN }
+}
+
+// Per-member activity (status changes + notes + other edits + hours) for the
+// report window, assembled from the board activity log + the report's tallies.
+type Member = {
+  name: string; hToday: number; hWeek: number
+  status: { t: number; task: string; from: string; to: string }[]
+  notes: { t: number; name: string }[]
+  edits: number
+}
+function buildMembers(r: ReturnType<typeof buildReport>, logs: ActLog[]): Member[] {
+  const m: Record<string, Member> = {}
+  for (const [id, name] of Object.entries(NAMED)) {
+    m[id] = { name, hToday: r.ttToday[id] || 0, hWeek: r.ttWeek[id] || 0, status: [], notes: r.notesByUser[id] || [], edits: 0 }
+  }
+  for (const l of logs) {
+    const uid = String(l.user_id)
+    if (!(uid in m)) continue
+    const t = Number(l.created_at) / 1e4 // activity_logs created_at is in 100ns units
+    if (t < r.winStart) continue
+    if (l.event === 'update_column_value') {
+      let d: any; try { d = JSON.parse(l.data) } catch { continue }
+      if (d?.column_id === COL.status) {
+        m[uid].status.push({ t, task: d.pulse_name || '—', from: d.previous_value?.label?.text || '—', to: d.value?.label?.text || '—' })
+      } else {
+        m[uid].edits++
+      }
+    } else if (l.event === 'create_pulse' || l.event === 'move_pulse_from_group' || l.event === 'update_name') {
+      m[uid].edits++
+    }
+  }
+  for (const v of Object.values(m)) { v.status.sort((a, b) => b.t - a.t); v.notes.sort((a, b) => b.t - a.t) }
+  return TEAM_ORDER.map(id => m[id])
 }
 
 const esc = (s: string) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!))
@@ -226,7 +281,7 @@ function renderMorning(r: ReturnType<typeof buildReport>, dateStr: string, timeS
 }
 
 // ── 6 PM: what got done today + activity + hours ──────────────────────────
-function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeStr: string) {
+function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeStr: string, members: Member[]) {
   const subject = `MedMart Dev Sprint — Evening Wrap-up — ${dateStr}`
   const winStr = fmtET(new Date(r.winStart), { weekday: 'short', hour: 'numeric', minute: '2-digit' })
   const tm = (t: number) => fmtET(new Date(t), { hour: 'numeric', minute: '2-digit' })
@@ -237,16 +292,23 @@ function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeS
   const recentRows = r.recent.slice(0, 20).map(x =>
     `<tr><td style="padding:1px 8px;color:#888;font-size:12px">${tm(x.t)}</td>`
     + `<td style="padding:1px 8px;font-size:12px"><span style="color:#667">[${esc(x.st)}]</span> ${esc(x.name)}</td></tr>`).join('')
-  const timeRows = Object.entries(NAMED).map(([uid, nm]) =>
-    `<tr><td style="padding:2px 10px">${nm}</td><td style="padding:2px 10px;text-align:right">${hrs(r.ttToday[uid])}</td>`
-    + `<td style="padding:2px 10px;text-align:right">${hrs(r.ttWeek[uid])}</td></tr>`).join('')
+  const memberBlocks = members.map(m => {
+    const acts: string[] = []
+    m.status.slice(0, 6).forEach(s => acts.push(`<div style="font-size:12px;color:#555;padding:1px 0">↪ <b>${esc(s.to)}</b> <span style="color:#999">(from ${esc(s.from)})</span> · ${esc(s.task)} <span style="color:#aaa">${tm(s.t)}</span></div>`))
+    m.notes.slice(0, 6).forEach(n => acts.push(`<div style="font-size:12px;color:#555;padding:1px 0">📝 note · ${esc(n.name)} <span style="color:#aaa">${tm(n.t)}</span></div>`))
+    const summ = `${hrs(m.hToday)} today / ${hrs(m.hWeek)} wk · ${m.status.length} status · ${m.notes.length} notes${m.edits ? ` · ${m.edits} edits` : ''}`
+    const quiet = !m.status.length && !m.notes.length && !m.edits && !m.hToday
+    return `<div style="margin:6px 0;padding:8px 10px;background:#fafafa;border-radius:6px">
+      <div><b>${esc(m.name)}</b> <span style="color:#888;font-size:12px">· ${summ}</span></div>
+      ${quiet ? '<div style="font-size:12px;color:#bbb">no activity</div>' : acts.join('')}</div>`
+  }).join('')
   const body = `${statusBlock(r)}
   <h3 style="margin:14px 0 4px;color:#15803d">✅ Done today — ${r.doneToday.length}</h3>
   <table style="border-collapse:collapse;font-size:13px;width:100%">${doneRows || emptyRow('nothing marked done yet')}</table>
   <h3 style="margin:18px 0 4px">🔄 Activity since ${winStr} — ${r.recent.length} items</h3>
   <table style="border-collapse:collapse;width:100%">${recentRows || emptyRow('no activity')}</table>
-  <h3 style="margin:18px 0 4px">⏱ Hours <span style="font-weight:400;font-size:12px;color:#999">(today / week-to-date)</span></h3>
-  <table style="border-collapse:collapse;font-size:13px"><tr style="color:#888"><td style="padding:2px 10px">Assignee</td><td style="padding:2px 10px;text-align:right">Today</td><td style="padding:2px 10px;text-align:right">Week</td></tr>${timeRows}</table>`
+  <h3 style="margin:18px 0 4px">👥 By team member <span style="font-weight:400;font-size:12px;color:#999">(time · status changes · notes, since ${winStr})</span></h3>
+  ${memberBlocks}`
   const html = shell('MedMart Dev Sprint — Evening Wrap-up', dateStr, timeStr, body)
 
   const lines: string[] = []
@@ -256,15 +318,19 @@ function renderEvening(r: ReturnType<typeof buildReport>, dateStr: string, timeS
   r.doneToday.slice(0, 30).forEach(x => lines.push(`  ${tm(x.t)} ${x.name} — ${x.asg || ''}`.trimEnd()))
   lines.push(`\n🔄 ACTIVITY since ${winStr}: ${r.recent.length} items`)
   r.recent.slice(0, 20).forEach(x => lines.push(`  ${tm(x.t)} [${x.st}] ${x.name}`))
-  lines.push(`\n⏱ HOURS (today / week-to-date):`)
-  Object.entries(NAMED).forEach(([uid, nm]) => lines.push(`  ${nm}: ${hrs(r.ttToday[uid])} / ${hrs(r.ttWeek[uid])}`))
+  lines.push(`\n👥 BY TEAM MEMBER (time today/wk · status · notes, since ${winStr}):`)
+  members.forEach(m => {
+    lines.push(`  ${m.name}: ${hrs(m.hToday)} today / ${hrs(m.hWeek)} wk · ${m.status.length} status · ${m.notes.length} notes${m.edits ? ` · ${m.edits} edits` : ''}`)
+    m.status.slice(0, 6).forEach(s => lines.push(`     ↪ ${s.to} (from ${s.from}) · ${s.task} ${tm(s.t)}`))
+    m.notes.slice(0, 6).forEach(n => lines.push(`     📝 note · ${n.name} ${tm(n.t)}`))
+  })
   return { subject, html, text: lines.join('\n') }
 }
 
-function render(r: ReturnType<typeof buildReport>) {
+function render(r: ReturnType<typeof buildReport>, members: Member[]) {
   const dateStr = fmtET(r.now, { weekday: 'short', month: 'short', day: 'numeric' })
   const timeStr = fmtET(r.now, { hour: 'numeric', minute: '2-digit' })
-  return r.isAM ? renderMorning(r, dateStr, timeStr) : renderEvening(r, dateStr, timeStr)
+  return r.isAM ? renderMorning(r, dateStr, timeStr) : renderEvening(r, dateStr, timeStr, members)
 }
 
 async function sendEmail(to: string[], subject: string, html: string, text: string, from: string) {
@@ -323,7 +389,12 @@ export default async function handler(request: Request): Promise<Response> {
     }
     const items = await fetchItems()
     const report = buildReport(items, now, forcedAM)
-    const { subject, html, text } = render(report)
+    // Per-member activity (status changes + edits) from the Dev Sprint board's
+    // activity log over the report window. Best-effort: never fail the report.
+    let logs: ActLog[] = []
+    try { logs = await fetchActivity(new Date(report.winStart).toISOString(), now.toISOString()) } catch { /* skip */ }
+    const members = buildMembers(report, logs)
+    const { subject, html, text } = render(report, members)
 
     // recipients: ?to= overrides (used for preview test); else REPORT_TO; else stakeholders
     const toParam = url.searchParams.get('to')
