@@ -498,29 +498,13 @@ export default function MedmartRoadmap2026() {
             <p className="mt-3 text-sm text-muted">Tip: start on the Home page and shop all the way through to the order confirmation — the cart carries across pages.</p>
           </DesignSub>
 
-          <DesignSub title="Product page — trust-forward buy box" desc="Reviews, stock/delivery, financing and warranty pulled up next to the CTA instead of buried in tabs.">
-            <div className="grid gap-5 lg:grid-cols-2"><BuyBox variant="before" /><BuyBox variant="after" /></div>
-          </DesignSub>
-
-          <DesignSub title="Home — route the audience" desc="One generic hero becomes an intent router: caregiver vs. patient vs. facility/business. Each path optimizes for a different buyer.">
-            <div className="grid gap-5 lg:grid-cols-2"><HomeHero variant="before" /><HomeHero variant="after" /></div>
-          </DesignSub>
-
-          <DesignSub title="Category — sell from the grid" desc="List view with no proof becomes a grid that earns the click: stars, free-shipping, financing, expert-help cues.">
-            <div className="grid gap-5 lg:grid-cols-2"><CategoryCard variant="before" /><CategoryCard variant="after" /></div>
-          </DesignSub>
-
-          <DesignSub title="Checkout — a reassurance rail" desc="Add a persistent rail that answers the last-second objections: financing/HSA, returns, security, delivery, and a way to get help.">
-            <CheckoutRail />
-          </DesignSub>
-
-          <DesignSub title="B2B / Facilities — a path of its own" desc="Pull Net-30, POs, tax-exempt and quotes out of the consumer checkout into a dedicated business entry.">
-            <B2BLanding />
-          </DesignSub>
-
-          <DesignSub title="Email — transactional & lifecycle" desc="Transactional emails get the highest open rates we'll ever see — make them branded and actionable. Then add the lifecycle flows that recover revenue.">
-            <EmailMock />
-            <div className="mt-5"><AbandonedCartEmail /></div>
+          <DesignSub title="Email campaigns — recover & grow revenue between visits" desc="The storefront redesign is above (open the live demo). These are the lifecycle email campaigns that bring shoppers back and lift repeat revenue — abandonment recovery, accessory cross-sell, win-back, and a survey-for-discount that grows the list and the review count.">
+            <div className="grid gap-5 lg:grid-cols-2">
+              <CampaignAbandoned />
+              <CampaignAccessories />
+              <CampaignSurvey />
+              <CampaignWinback />
+            </div>
           </DesignSub>
         </Section>
 
@@ -659,37 +643,6 @@ function Stars({ className = 'h-4 w-4' }: { className?: string }) {
 }
 
 
-function BuyBox({ variant }: { variant: 'before' | 'after' }) {
-  const after = variant === 'after'
-  return (
-    <div className={`rounded-xl border bg-card p-5 ${after ? 'border-emerald-500/30' : 'border-rose-500/30'}`}>
-      <div className="mb-3 flex items-center gap-2">
-        <span className={`rounded-md px-2 py-0.5 text-sm font-semibold ${after ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'}`}>{after ? 'After' : 'Before'}</span>
-        <span className="text-sm text-muted">{after ? 'trust-forward buy box' : 'current PDP buy box'}</span>
-      </div>
-      <div className="rounded-lg border border-border-subtle bg-surface p-4">
-        <div className="text-sm text-ink">Contesa FloorBed Hi-Low Homecare Bed</div>
-        {after
-          ? <div className="mt-1.5 flex items-center gap-2"><Stars className="h-4 w-4" /><span className="text-sm text-muted">4.8 · 126 reviews</span></div>
-          : <div className="mt-1.5 text-sm text-rose-300/80">— no reviews shown —</div>}
-        <div className="mt-2 font-display text-2xl font-bold text-ink">$3,599</div>
-        {after && <div className="mt-0.5 text-sm text-muted">or <span className="text-ink">$150/mo</span> with Affirm · HSA/FSA eligible</div>}
-        {after
-          ? <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1 text-sm text-emerald-300"><Icon name="truck" className="h-4 w-4" /> In stock · ships 3–5 days · free white-glove delivery</div>
-          : <div className="mt-2 text-sm text-rose-300/80">— no stock / delivery info —</div>}
-        <button className={`mt-3 w-full rounded-lg py-2 text-sm font-semibold ${after ? 'bg-emerald-500 text-bg' : 'bg-gold text-bg'}`}>Add to Cart</button>
-        {after
-          ? <div className="mt-3 grid grid-cols-3 gap-1.5 text-center text-xs text-muted">
-              <span className="flex items-center justify-center gap-1.5 rounded bg-white/5 py-1.5"><Icon name="shield" className="h-4 w-4" /> 5-yr warranty</span>
-              <span className="flex items-center justify-center gap-1.5 rounded bg-white/5 py-1.5"><Icon name="refresh" className="h-4 w-4" /> 30-day returns</span>
-              <span className="flex items-center justify-center gap-1.5 rounded bg-white/5 py-1.5"><Icon name="chat" className="h-4 w-4" /> Talk to expert</span>
-            </div>
-          : <div className="mt-3 text-sm text-rose-300/70">Warranty · returns · price-match hidden in tabs below</div>}
-      </div>
-    </div>
-  )
-}
-
 function DesignSub({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
     <div className="mt-8 first:mt-0">
@@ -700,201 +653,85 @@ function DesignSub({ title, desc, children }: { title: string; desc: string; chi
   )
 }
 
-function MockFrame({ tone, label, sub, children }: { tone: 'before' | 'after'; label?: string; sub?: string; children: React.ReactNode }) {
-  const after = tone === 'after'
+
+/* ----------------------------- email campaigns ---------------------------- */
+
+function EmailShell({ tag, trigger, subject, children }: { tag: string; trigger: string; subject: string; children: React.ReactNode }) {
   return (
-    <div className={`rounded-xl border bg-card p-5 ${after ? 'border-emerald-500/30' : 'border-rose-500/30'}`}>
-      <div className="mb-3 flex items-center gap-2">
-        <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${after ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'}`}>{label || (after ? 'After' : 'Before')}</span>
-        {sub && <span className="text-sm text-muted">{sub}</span>}
+    <div className="rounded-xl border border-border-subtle bg-card p-5">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="rounded-md bg-gold/15 px-2 py-0.5 text-sm font-semibold text-gold-light">{tag}</span>
+        <span className="text-sm text-muted">{trigger}</span>
       </div>
-      {children}
+      <div className="overflow-hidden rounded-lg border border-border-subtle bg-white text-sm text-gray-800">
+        <div className="flex items-center gap-2 bg-[#1c3251] px-4 py-3 text-white"><span className="font-bold tracking-wide">MED MART</span></div>
+        <div className="border-b border-gray-100 px-4 py-2 font-mono text-xs text-gray-500">Subject: {subject}</div>
+        <div className="p-4">{children}</div>
+      </div>
     </div>
   )
 }
 
-function HomeHero({ variant }: { variant: 'before' | 'after' }) {
-  if (variant === 'before') {
-    return (
-      <MockFrame tone="before" sub="generic, no routing">
-        <div className="rounded-lg border border-border-subtle bg-surface p-4">
-          <div className="rounded-md bg-[#1a3a6b] p-6 text-center text-white">
-            <div className="text-lg font-bold">Family Business Since 1992</div>
-            <div className="mt-1 text-sm opacity-80">Fast & free shipping · BBB accredited</div>
-            <div className="mt-3 inline-block rounded bg-white/20 px-3 py-1 text-sm">[ staff photo ]</div>
-          </div>
-          <p className="mt-3 text-sm text-rose-300/80">One message for everyone — caregiver, patient and facility buyer all land here.</p>
-        </div>
-      </MockFrame>
-    )
-  }
-  const paths: { icon: string; label: string }[] = [
-    { icon: 'user', label: 'For myself' },
-    { icon: 'heart', label: 'For a loved one' },
-    { icon: 'building', label: 'For my facility' },
-  ]
+function CampaignAbandoned() {
   return (
-    <MockFrame tone="after" sub="intent router">
-      <div className="rounded-lg border border-border-subtle bg-surface p-4">
-        <div className="text-center text-base font-semibold text-ink">What brings you to MedMart today?</div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {paths.map(p => (
-            <div key={p.label} className="rounded-lg border border-gold/30 bg-gold/5 p-3 text-center">
-              <Icon name={p.icon} className="mx-auto h-6 w-6 text-gold-light" />
-              <div className="mt-1.5 text-sm font-medium text-ink">{p.label}</div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-sm text-emerald-300/80">Each path tunes products, financing and proof to that buyer — facility routes into the business flow.</p>
+    <EmailShell tag="Abandonment recovery" trigger="3-touch: 1 hour, 1 day, 3 days after cart left" subject="Still thinking it over, Jordan?">
+      <p>Your <strong>Golden Buzzaround HD</strong> is still in your cart — we saved it for you.</p>
+      <div className="mt-3 flex items-center gap-3 rounded-md bg-gray-50 p-3">
+        <div className="grid h-14 w-14 shrink-0 place-items-center rounded bg-gray-200 text-xs text-gray-500">scooter</div>
+        <div><div className="font-semibold">$1,899</div><div className="text-[#0076bc]">or $79/mo · HSA/FSA eligible</div></div>
       </div>
-    </MockFrame>
+      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Complete your order</button>
+      <p className="mt-2 text-sm text-gray-500">Questions about fit or financing? Reply to this email or call — a real specialist answers. (Touch 3 adds a small incentive.)</p>
+    </EmailShell>
   )
 }
 
-function CategoryCard({ variant }: { variant: 'before' | 'after' }) {
-  const after = variant === 'after'
+function CampaignAccessories() {
+  const items = [['Deluxe scooter cover', '$39'], ['Cup & cane holder', '$19'], ['Spare battery pack', '$189']]
   return (
-    <MockFrame tone={variant} sub={after ? 'grid card that earns the click' : 'list row, no proof'}>
-      <div className="rounded-lg border border-border-subtle bg-surface p-3">
-        <div className="flex gap-3">
-          <div className="grid h-20 w-20 shrink-0 place-items-center rounded bg-white/5 text-xs text-muted">image</div>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm text-ink">Golden Buzzaround HD Mobility Scooter</div>
-            {after && <div className="mt-1 flex items-center gap-1.5"><Stars className="h-3.5 w-3.5" /><span className="text-sm text-muted">(214)</span></div>}
-            <div className="mt-1 font-semibold text-ink">$1,899</div>
-            {after
-              ? <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs">
-                  <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-300">Free shipping</span>
-                  <span className="rounded bg-gold/15 px-2 py-0.5 text-gold-light">$79/mo</span>
-                  <span className="rounded bg-sky-500/15 px-2 py-0.5 text-sky-300">In stock</span>
-                </div>
-              : <div className="mt-1 text-sm text-rose-300/70">no stars · no shipping · no financing cue</div>}
+    <EmailShell tag="Cross-sell / accessories" trigger="7 days after delivery, or browse-based" subject="Complete your setup, Jordan">
+      <p>Owners of the <strong>Buzzaround HD</strong> love these add-ons:</p>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {items.map(([n, pr]) => (
+          <div key={n} className="rounded-md border border-gray-100 p-2 text-center">
+            <div className="mx-auto grid h-12 w-full place-items-center rounded bg-gray-100 text-[10px] text-gray-400">image</div>
+            <div className="mt-1 text-xs font-medium leading-tight text-gray-800">{n}</div>
+            <div className="text-xs font-semibold text-gray-900">{pr}</div>
           </div>
-        </div>
-        {after && <button className="mt-3 w-full rounded bg-emerald-500 py-2 text-sm font-semibold text-bg">Add to Cart · or chat with an expert</button>}
+        ))}
       </div>
-    </MockFrame>
+      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Shop accessories</button>
+      <p className="mt-2 text-sm text-gray-500">Also powers “new arrivals in Mobility Scooters” to past browsers.</p>
+    </EmailShell>
   )
 }
 
-function CheckoutRail() {
+function CampaignSurvey() {
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-      <MockFrame tone="after" label="After" sub="checkout with a reassurance rail">
-        <div className="grid grid-cols-[1fr_140px] gap-3">
-          <div className="space-y-2">
-            <div className="h-7 rounded bg-white/5" />
-            <div className="h-7 rounded bg-white/5" />
-            <div className="grid grid-cols-2 gap-2"><div className="h-7 rounded bg-white/5" /><div className="h-7 rounded bg-white/5" /></div>
-            <div className="h-7 rounded bg-white/5" />
-            <button className="h-9 w-full rounded bg-emerald-500 text-sm font-semibold text-bg">Place order</button>
-          </div>
-          <aside className="space-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-200/90">
-            <div className="flex items-center gap-2"><Icon name="lock" className="h-4 w-4" /> Secure 256-bit checkout</div>
-            <div className="flex items-center gap-2"><Icon name="card" className="h-4 w-4" /> Affirm · HSA/FSA eligible</div>
-            <div className="flex items-center gap-2"><Icon name="truck" className="h-4 w-4" /> Free white-glove delivery</div>
-            <div className="flex items-center gap-2"><Icon name="refresh" className="h-4 w-4" /> 30-day returns</div>
-            <div className="flex items-center gap-2"><Icon name="phone" className="h-4 w-4" /> Stuck? Call an expert</div>
-          </aside>
-        </div>
-      </MockFrame>
-      <MockFrame tone="before" label="Before" sub="bare form, no reassurance">
-        <div className="space-y-2">
-          <div className="h-7 rounded bg-white/5" />
-          <div className="h-7 rounded bg-white/5" />
-          <div className="h-7 rounded bg-white/5" />
-          <button className="h-9 w-full rounded bg-gold text-sm font-semibold text-bg">Place order</button>
-          <p className="text-sm text-rose-300/70">No financing reminder, no security/returns cues, no help.</p>
-        </div>
-      </MockFrame>
-    </div>
+    <EmailShell tag="Survey → discount" trigger="after a support call or 30 days post-purchase" subject="How are we doing? Here’s 10% off to say thanks">
+      <p>Your feedback shapes what we stock and how we help. Two minutes is all it takes.</p>
+      <div className="mt-3 flex items-center justify-center gap-2 rounded-md bg-gray-50 py-3">
+        <Stars className="h-6 w-6" /><span className="text-xs text-gray-500">tap to rate</span>
+      </div>
+      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Take the 2-minute survey</button>
+      <div className="mt-3 flex items-center gap-2 rounded-md bg-[#fdeaea] px-3 py-2 text-sm text-[#b5231f]">
+        <span className="rounded bg-[#e3252b] px-1.5 py-0.5 text-xs font-bold text-white">10% OFF</span> emailed the moment you finish.
+      </div>
+      <p className="mt-2 text-sm text-gray-500">Grows your review count, your list, and tells you why people hesitate.</p>
+    </EmailShell>
   )
 }
 
-function B2BLanding() {
+function CampaignWinback() {
   return (
-    <MockFrame tone="after" label="Target" sub="dedicated business entry">
-      <div className="rounded-lg border border-border-subtle bg-surface p-4">
-        <div className="rounded-md bg-[#0d2440] p-4 text-white">
-          <div className="flex items-center gap-2 text-base font-bold"><Icon name="building" className="h-5 w-5" /> MedMart for Business & Facilities</div>
-          <div className="mt-1 text-sm opacity-80">Volume pricing · Net-30 terms · tax-exempt · dedicated account manager</div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded bg-white px-3 py-1.5 text-sm font-semibold text-[#0d2440]">Request a quote</span>
-            <span className="rounded border border-white/40 px-3 py-1.5 text-sm">Open a business account</span>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs text-muted">
-          {['Quote-to-order', 'PO upload', 'Tax-exempt', 'Multi-seat'].map(x => <span key={x} className="rounded bg-white/5 py-2">{x}</span>)}
-        </div>
-        <p className="mt-3 text-sm text-emerald-300/80">Removes Net-30 / PO / tax-exempt noise from the consumer checkout — each audience gets a clean path.</p>
+    <EmailShell tag="Win-back" trigger="90 days inactive" subject="We miss you — here’s 15% off, on us">
+      <p>It’s been a while, Jordan. Whatever you need next, we’ll help you find it — and take care of delivery and setup.</p>
+      <div className="mt-3 rounded-md border border-dashed border-[#e3252b] bg-[#fdeaea] p-3 text-center">
+        <div className="font-display text-2xl font-extrabold text-[#e3252b]">15% OFF</div>
+        <div className="text-xs text-gray-600">your next order · code <span className="font-mono font-semibold text-gray-900">WELCOME15</span></div>
       </div>
-    </MockFrame>
-  )
-}
-
-function AbandonedCartEmail() {
-  return (
-    <MockFrame tone="after" label="Lifecycle" sub="abandoned-cart recovery (Klaviyo)">
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-        <div className="overflow-hidden rounded-lg border border-border-subtle bg-white text-sm text-gray-800">
-          <div className="bg-[#1a3a6b] px-4 py-3 text-white"><span className="font-bold">MED MART</span> <span className="opacity-80">· Still thinking it over?</span></div>
-          <div className="p-4">
-            <p>Your <strong>Golden Buzzaround HD</strong> is still in your cart.</p>
-            <div className="mt-3 flex items-center gap-3 rounded-md bg-gray-50 p-3 text-sm">
-              <div className="grid h-12 w-12 place-items-center rounded bg-gray-200 text-xs text-gray-500">img</div>
-              <div><div className="font-semibold">$1,899</div><div className="text-emerald-700">or $79/mo · HSA/FSA eligible</div></div>
-            </div>
-            <button className="mt-3 w-full rounded bg-emerald-600 py-2.5 text-sm font-semibold text-white">Complete your order</button>
-            <p className="mt-2 text-sm text-gray-500">Questions about fit or financing? Reply or call — a real expert answers.</p>
-          </div>
-        </div>
-        <div className="text-sm text-muted">
-          <div className="font-medium text-ink">Why this flow</div>
-          <ul className="mt-2 space-y-2 text-sm">
-            <li className="flex gap-2"><Icon name="chevron" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> Recovers the highest-intent lost revenue first.</li>
-            <li className="flex gap-2"><Icon name="chevron" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> Leads with financing — the #1 objection on high-AOV equipment.</li>
-            <li className="flex gap-2"><Icon name="chevron" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> Offers human help, matching the assisted nature of these buys.</li>
-            <li className="flex gap-2"><Icon name="chevron" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> 3-touch series (hours, 1 day, 3 days); business carts route to a rep.</li>
-          </ul>
-        </div>
-      </div>
-    </MockFrame>
-  )
-}
-
-function EmailMock() {
-  return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <div className="rounded-xl border border-rose-500/30 bg-card p-5">
-        <div className="mb-3"><span className="rounded-md bg-rose-500/15 px-2 py-0.5 text-sm font-semibold text-rose-300">Before</span> <span className="text-sm text-muted">plain transactional</span></div>
-        <div className="rounded-lg border border-border-subtle bg-white p-4 text-sm text-gray-800">
-          <p className="font-mono text-sm text-gray-600">Subject: Your order #100012345</p>
-          <hr className="my-2" />
-          <p>Thank you for your order. Your order number is 100012345.</p>
-          <p className="mt-2">You can view your order in your account.</p>
-          <p className="mt-2 text-gray-500">— MedMart</p>
-        </div>
-      </div>
-      <div className="rounded-xl border border-emerald-500/30 bg-card p-5">
-        <div className="mb-3"><span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-sm font-semibold text-emerald-300">After</span> <span className="text-sm text-muted">branded · actionable · retention</span></div>
-        <div className="overflow-hidden rounded-lg border border-border-subtle bg-white text-sm text-gray-800">
-          <div className="flex items-center gap-2 bg-[#1a3a6b] px-4 py-3 text-white"><span className="font-bold tracking-wide">MED MART</span> <Icon name="check" className="h-4 w-4" /> <span className="opacity-80">Order confirmed</span></div>
-          <div className="p-4">
-            <p>Hi Jordan — your <strong>Contesa FloorBed</strong> is confirmed.</p>
-            <div className="mt-3 rounded-md bg-gray-50 p-3 text-sm">
-              <div className="flex justify-between"><span>Order #100012345</span><span className="font-semibold">$3,599.00</span></div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-emerald-700"><Icon name="truck" className="h-4 w-4" /> Ships 3–5 days · free white-glove delivery</div>
-            </div>
-            <button className="mt-3 w-full rounded bg-emerald-600 py-2.5 text-sm font-semibold text-white">Track your delivery</button>
-            <div className="mt-3 grid grid-cols-3 gap-1.5 text-center text-xs text-gray-600">
-              <span className="rounded bg-gray-100 py-2">Set-up guide</span>
-              <span className="rounded bg-gray-100 py-2">HSA receipt</span>
-              <span className="rounded bg-gray-100 py-2">Need help?</span>
-            </div>
-            <p className="mt-3 text-sm text-gray-500">Frequently bought with this bed: rails, mattress, overlay.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <button className="mt-3 w-full rounded bg-[#0076bc] py-2.5 text-sm font-semibold text-white">Come back & save</button>
+      <p className="mt-2 text-sm text-gray-500">Plus free shipping — always. Business carts route to a rep instead.</p>
+    </EmailShell>
   )
 }
