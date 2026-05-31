@@ -10,6 +10,24 @@ const pages: {
   icon: React.ReactNode
 }[] = [
   {
+    path: '/medmart/devops',
+    category: 'Process',
+    categoryColor: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+    title: 'DevOps Runbook',
+    description: 'The end-to-end development + release pipeline for the Adobe Commerce Cloud / GitHub stack — branching model, CI gates, environment promotion, and deploy/rollback runbooks.',
+    bullets: [
+      'Role-based: Developer · Reviewer/Lead · Release Owner',
+      'Three branches → three Cloud environments, no cherry-picking',
+      'Real CI gates, manual-deploy mechanics, hotfix & rollback',
+    ],
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M12 3v6m0 6v6M5.6 5.6l4.2 4.2m4.4 4.4l4.2 4.2M3 12h6m6 0h6" />
+        <circle cx="12" cy="12" r="2.5" />
+      </svg>
+    ),
+  },
+  {
     path: '/medmart/pdp-demo',
     category: 'Concept',
     categoryColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',

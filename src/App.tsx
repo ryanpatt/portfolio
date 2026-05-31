@@ -24,6 +24,7 @@ const MedmartTestBotsFollowup = lazy(() => import('./components/MedmartTestBotsF
 const MedmartTeamManagement = lazy(() => import('./components/MedmartTeamManagement'))
 const MedmartMckessonLogicbroker = lazy(() => import('./components/MedmartMckessonLogicbroker'))
 const MedmartPdpDemo = lazy(() => import('./components/MedmartPdpDemo'))
+const MedmartDevOps = lazy(() => import('./components/MedmartDevOps'))
 const KloyHub = lazy(() => import('./components/KloyHub'))
 const KloyProject = lazy(() => import('./components/KloyProject'))
 const FxchPolc = lazy(() => import('./components/FxchPolc'))
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/medmart/team-management" element={<MedmartTeamManagement />} />
           <Route path="/medmart/mckesson-logicbroker" element={<MedmartMckessonLogicbroker />} />
           <Route path="/medmart/pdp-demo" element={<MedmartPdpDemo />} />
+          <Route path="/medmart/devops" element={<MedmartDevOps />} />
           <Route path="/kloy/demo" element={<KloyHub />} />
           <Route path="/kloy/demo/:slug" element={<KloyProject />} />
           <Route path="/kloy/fxch" element={<FxchPolc />} />
