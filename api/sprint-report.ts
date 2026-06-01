@@ -452,7 +452,7 @@ export default async function handler(request: Request): Promise<Response> {
     const to = (toParam || process.env.REPORT_TO ||
       'rpatt@medmart.com,dlykins@medmart.com,dfesman@medmart.com').split(',').map(s => s.trim()).filter(Boolean)
 
-    const fromAddr = url.searchParams.get('from') || process.env.REPORT_FROM || 'MedMart Reports <noreply@ryanpatt.email>'
+    const fromAddr = url.searchParams.get('from') || process.env.REPORT_FROM || 'MedMart Reports <noreply@ryanpatt.com>'
     if (url.searchParams.get('dry') === '1') {
       return new Response(JSON.stringify({ subject, from: fromAddr, to, text }, null, 2), { headers: { 'Content-Type': 'application/json' } })
     }
