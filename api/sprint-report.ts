@@ -1,4 +1,4 @@
-// MedMart Dev Sprint — twice-daily status report (8 AM / 6 PM ET).
+// MedMart Dev Sprint — twice-daily status report (11 AM / 8 PM ET).
 // Triggered by Vercel Cron (see vercel.json) or manually with ?preview=1.
 // Pulls the Monday board, builds a report, emails it via ElasticEmail.
 //
@@ -416,18 +416,20 @@ export default async function handler(request: Request): Promise<Response> {
       const res = await fetch('https://api.elasticemail.com/v4/domains', { headers: { 'X-ElasticEmail-ApiKey': apiKey } })
       return new Response(await res.text(), { status: res.status, headers: { 'Content-Type': 'application/json' } })
     }
-    // Vercel Cron fires four UTC slots (12/13/22/23, Mon–Fri); we proceed only
-    // when the punctual fire lands on 8am or 6pm ET, which is exactly one cron
-    // per slot in either DST state — no double-send, DST-proof. The slot/AM is
-    // derived from the ET hour (no slot param needed). ?slot=am|pm forces a run
-    // for manual preview testing.
+    // Vercel Cron fires four UTC slots; we proceed only when the punctual fire
+    // lands on 11am or 8pm ET, which is exactly one cron per slot in either DST
+    // state — no double-send, DST-proof. Morning is same-UTC-day (15/16 UTC,
+    // Mon–Fri); the 8pm slot rolls past UTC midnight (0/1 UTC) so its weekday
+    // field is shifted to Tue–Sat to still land on Mon–Fri *evenings* ET. The
+    // slot/AM is derived from the ET hour (no slot param needed). ?slot=am|pm
+    // forces a run for manual preview testing.
     const now = new Date()
     const { h } = etParts(now)
     const slot = url.searchParams.get('slot') // 'am' | 'pm'
     let forcedAM: boolean | undefined
     if (slot === 'am') forcedAM = true
     else if (slot === 'pm') forcedAM = false
-    if (!isPreview && !slot && h !== 8 && h !== 18) {
+    if (!isPreview && !slot && h !== 11 && h !== 20) {
       return new Response(JSON.stringify({ skipped: `ET hour ${h} is not a send window` }), { headers: { 'Content-Type': 'application/json' } })
     }
     const items = await fetchItems()

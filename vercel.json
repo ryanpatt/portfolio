@@ -3,9 +3,9 @@
     { "source": "/((?!api/|jamestowncafe/).*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/sprint-report", "schedule": "0 12 * * 1-5" },
-    { "path": "/api/sprint-report", "schedule": "0 13 * * 1-5" },
-    { "path": "/api/sprint-report", "schedule": "0 22 * * 1-5" },
-    { "path": "/api/sprint-report", "schedule": "0 23 * * 1-5" }
+    { "path": "/api/sprint-report", "schedule": "0 15 * * 1-5" },
+    { "path": "/api/sprint-report", "schedule": "0 16 * * 1-5" },
+    { "path": "/api/sprint-report", "schedule": "0 0 * * 2-6" },
+    { "path": "/api/sprint-report", "schedule": "0 1 * * 2-6" }
   ]
 }
