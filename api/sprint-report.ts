@@ -1,4 +1,4 @@
-// MedMart Dev Sprint — twice-daily status report (8 AM / 6 PM ET).
+// MedMart Dev Sprint — twice-daily status report (11 AM / 8 PM ET).
 // Triggered by Vercel Cron (see vercel.json) or manually with ?preview=1.
 // Pulls the Monday board, builds a report, emails it via ElasticEmail.
 //
@@ -261,14 +261,14 @@ export default async function handler(request: Request): Promise<Response> {
       return new Response(await res.text(), { status: res.status, headers: { 'Content-Type': 'application/json' } })
     }
     // The GitHub Actions caller passes slot=am|pm after doing its own ET gating.
-    // Fallback guard (if called without a slot): only proceed at 8am / 6pm ET.
+    // Fallback guard (if called without a slot): only proceed at 11am / 8pm ET.
     const now = new Date()
     const { h } = etParts(now)
     const slot = url.searchParams.get('slot') // 'am' | 'pm'
     let forcedAM: boolean | undefined
     if (slot === 'am') forcedAM = true
     else if (slot === 'pm') forcedAM = false
-    if (!isPreview && !slot && h !== 8 && h !== 18) {
+    if (!isPreview && !slot && h !== 11 && h !== 20) {
       return new Response(JSON.stringify({ skipped: `ET hour ${h} is not a send window` }), { headers: { 'Content-Type': 'application/json' } })
     }
     const items = await fetchItems()

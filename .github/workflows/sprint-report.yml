@@ -1,16 +1,16 @@
 name: MedMart Dev Sprint report
 
-# Twice daily at 8:00 AM and 6:00 PM US Eastern, year-round (DST-proof).
+# Twice daily at 11:00 AM and 8:00 PM US Eastern, year-round (DST-proof).
 # Four UTC crons cover both EDT and EST. We pick the slot from the cron
 # expression that fired (github.event.schedule) plus the current TZ — NOT
 # the wall-clock hour — so GitHub Actions cron delays (often 1–4 hours on
 # the free tier) don't cause us to silently skip a send.
 on:
   schedule:
-    - cron: '0 12 * * *'   # 08:00 EDT
-    - cron: '0 13 * * *'   # 08:00 EST
-    - cron: '0 22 * * *'   # 18:00 EDT
-    - cron: '0 23 * * *'   # 18:00 EST
+    - cron: '0 15 * * *'   # 11:00 EDT
+    - cron: '0 16 * * *'   # 11:00 EST
+    - cron: '0 0 * * *'    # 20:00 EDT (8 PM)
+    - cron: '0 1 * * *'    # 20:00 EST (8 PM)
   workflow_dispatch:
     inputs:
       slot:
@@ -35,13 +35,13 @@ jobs:
           slot=
           if [ "$TZ_ABBR" = "EDT" ]; then
             case "$SCHEDULE" in
-              "0 12 * * *") slot=am ;;
-              "0 22 * * *") slot=pm ;;
+              "0 15 * * *") slot=am ;;
+              "0 0 * * *") slot=pm ;;
             esac
           elif [ "$TZ_ABBR" = "EST" ]; then
             case "$SCHEDULE" in
-              "0 13 * * *") slot=am ;;
-              "0 23 * * *") slot=pm ;;
+              "0 16 * * *") slot=am ;;
+              "0 1 * * *") slot=pm ;;
             esac
           fi
           if [ -z "$slot" ]; then
