@@ -25,6 +25,11 @@ const COL = {
   sp: 'numeric_mm3bjq3m',
   tt: 'duration_mm3be8w6',
 }
+// Subitems live on their own board with their OWN time-tracking column. Hours
+// logged on subtasks are invisible if we only read the parent board's `tt`, so
+// we also pull subitem time tracking and fold it into per-member hour totals.
+const SUBITEMS_BOARD = '18413285656'
+const SUB_TT = 'duration_mm3tyqjg'
 // Team tracked in the "by team member" activity section + hours. TEAM_ORDER
 // fixes display order (JS reorders numeric-string object keys, so don't rely on it).
 const TEAM_ORDER = ['104228757', '96592612', '97246569', '101693627']
@@ -89,6 +94,31 @@ async function fetchItems(): Promise<Item[]> {
     cursor = page.cursor
   } while (cursor)
   return items
+}
+
+// Time-tracking sessions logged on SUBITEMS (separate board, separate column).
+// Returns one entry per completed session so buildReport can bucket them into
+// today / week-to-date exactly like parent-item sessions. Best-effort.
+type TTSession = { uid: string; start: number; dur: number }
+async function fetchSubitemSessions(): Promise<TTSession[]> {
+  const q = `query($b:ID!,$c:String){boards(ids:[$b]){items_page(limit:100,cursor:$c){cursor items{
+    tt:column_values(ids:["${SUB_TT}"]){ ... on TimeTrackingValue { history{started_user_id started_at ended_at} } }
+  }}}}`
+  const out: TTSession[] = []
+  let cursor: string | null = null
+  do {
+    const d: any = await monday(q, { b: SUBITEMS_BOARD, c: cursor })
+    const page = d.boards[0].items_page
+    for (const it of page.items) {
+      for (const h of it.tt?.[0]?.history || []) {
+        if (!(h.started_user_id in NAMED) || !h.ended_at) continue
+        const start = Date.parse(h.started_at)
+        out.push({ uid: h.started_user_id, start, dur: (Date.parse(h.ended_at) - start) / 1000 })
+      }
+    }
+    cursor = page.cursor
+  } while (cursor)
+  return out
 }
 
 // Activity log for the Dev Sprint board over [fromISO, toISO]. Single board only.
@@ -166,7 +196,8 @@ const fmtET = (d: Date, opts: Intl.DateTimeFormatOptions) =>
 function one(cvs: { text: string | null }[]) { return cvs?.[0]?.text || null }
 
 type Row = { age: number; st: string; sc: string; name: string; asg: string; sp: number }
-function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
+type Focus = { age: number; label: string; name: string; asg: string }
+function buildReport(items: Item[], now: Date, forcedAM?: boolean, subSessions: TTSession[] = []) {
   const et = etParts(now)
   const isAM = forcedAM !== undefined ? forcedAM : et.h < 12
   const STALE_BASE = +(process.env.STALE_BASE_DAYS || 2)
@@ -183,6 +214,7 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
   const scopeCt: Record<string, number> = {}
   const stale: Row[] = [], hung: Row[] = []
   const active: Row[] = []
+  const focus: Focus[] = [] // most pressing blockers: Stuck status + items waiting in a QA/deploy gate
   const doneToday: { t: number; name: string; asg: string }[] = []
   const recent: { t: number; st: string; name: string }[] = []
   const ttToday: Record<string, number> = {}, ttWeek: Record<string, number> = {}
@@ -205,6 +237,8 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
       else if (GATES.has(st)) hung.push(row)
     }
     if (!done && INPROGRESS.has(st)) active.push(row)
+    if (!done && st === 'Stuck') focus.push({ age: row.age, label: 'Stuck', name: it.name, asg })
+    else if (!done && GATES.has(st)) focus.push({ age: row.age, label: 'QA gate', name: it.name, asg })
     if (done && upd >= dayStart) doneToday.push({ t: upd, name: it.name, asg })
     if (upd >= winStart) recent.push({ t: upd, st, name: it.name })
     for (const h of it.tt?.[0]?.history || []) {
@@ -221,13 +255,21 @@ function buildReport(items: Item[], now: Date, forcedAM?: boolean) {
       if (cid in NAMED && t >= winStart) notesByUser[cid].push({ t, name: it.name })
     }
   }
+  // Fold subitem time-tracking into the same per-member today/week buckets.
+  for (const s of subSessions) {
+    if (!(s.uid in NAMED)) continue
+    if (s.start >= dayStart) ttToday[s.uid] += s.dur
+    if (s.start >= weekStart) ttWeek[s.uid] += s.dur
+  }
+
   const byAge = (a: Row, b: Row) => b.age - a.age
   const stIdx = (s: string) => { const i = STATUS_ORDER.indexOf(s); return i < 0 ? 99 : i }
   stale.sort(byAge); hung.sort(byAge)
   active.sort((a, b) => stIdx(a.st) - stIdx(b.st) || b.age - a.age)
+  focus.sort((a, b) => b.age - a.age)
   doneToday.sort((a, b) => b.t - a.t)
   recent.sort((a, b) => b.t - a.t)
-  return { now, isAM, winStart, dayStart, statusCt, scopeCt, stale, hung, active, doneToday, recent, ttToday, ttWeek, notesByUser, total: items.length, STALE_BASE, SP_GRACE_MIN }
+  return { now, isAM, winStart, dayStart, statusCt, scopeCt, stale, hung, active, focus, doneToday, recent, ttToday, ttWeek, notesByUser, total: items.length, STALE_BASE, SP_GRACE_MIN }
 }
 
 // Per-member activity (status changes + notes + other edits + hours) for the
@@ -268,12 +310,6 @@ const hrs = (s: number) => `${(s / 3600).toFixed(1)}h`
 
 // ── shared rendering pieces ───────────────────────────────────────────────
 const emptyRow = (msg: string) => `<tr><td style="color:#999;padding:4px 8px">${msg}</td></tr>`
-const rowTbl = (rows: Row[]) => rows.slice(0, 20).map(x =>
-  `<tr><td style="padding:2px 8px;color:#b45309;font-weight:600">${x.age}d</td>`
-  + `<td style="padding:2px 8px"><span style="background:#eef;border-radius:4px;padding:1px 6px;font-size:12px">${esc(x.st)}</span> `
-  + `<span style="color:#888;font-size:12px">${esc(x.sc)}</span></td>`
-  + `<td style="padding:2px 8px">${esc(x.name)}${x.sp ? ` <span style="color:#aaa">(${x.sp}sp)</span>` : ''}</td>`
-  + `<td style="padding:2px 8px;color:#555;font-size:12px">${esc(x.asg || 'unassigned')}</td></tr>`).join('')
 
 function statusBlock(r: ReturnType<typeof buildReport>) {
   const statusLine = STATUS_ORDER.filter(s => r.statusCt[s])
@@ -299,27 +335,58 @@ function shell(title: string, dateStr: string, timeStr: string, body: string) {
 </div>`
 }
 
-// ── 8 AM: what's active / being worked on ─────────────────────────────────
+// ── 11 AM: what's active + today's focus + hours ──────────────────────────
+const MORNING_CAP = 6 // max rows shown per list before "+N more"
 function renderMorning(r: ReturnType<typeof buildReport>, dateStr: string, timeStr: string) {
   const subject = `MedMart Dev Sprint — Morning: What's Active — ${dateStr}`
-  const body = `${statusBlock(r)}
-  <h3 style="margin:14px 0 4px">🔧 Active — being worked on — ${r.active.length}</h3>
-  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.active) || emptyRow('nothing in progress')}</table>
-  <h3 style="margin:18px 0 4px;color:#b45309">⚠ Stalling — ${r.stale.length} <span style="font-weight:400;font-size:12px;color:#999">(no update ≥ ${r.STALE_BASE}d; items ≥${r.SP_GRACE_MIN}sp get sp-day grace)</span></h3>
-  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.stale) || emptyRow('none 🎉')}</table>
-  <h3 style="margin:18px 0 4px;color:#b91c1c">⛔ Waiting in deploy/QA gate — ${r.hung.length}</h3>
-  <table style="border-collapse:collapse;font-size:13px;width:100%">${rowTbl(r.hung) || emptyRow('none 🎉')}</table>`
+  const done = r.statusCt['Done'] || 0
+  const tldr = `${r.total} items · ${r.active.length} active · ${r.stale.length} stalling · ${r.hung.length} waiting in QA gate · ${done} done`
+
+  // compact list: age · name · assignee, capped with a "+N more" line
+  const slim = (rows: Row[], emptyMsg: string) => {
+    if (!rows.length) return emptyRow(emptyMsg)
+    const head = rows.slice(0, MORNING_CAP).map(x =>
+      `<tr><td style="padding:2px 8px;color:#b45309;font-weight:600;white-space:nowrap">${x.age}d</td>`
+      + `<td style="padding:2px 8px">${esc(x.name)}</td>`
+      + `<td style="padding:2px 8px;color:#777;font-size:12px">${esc(x.asg || 'unassigned')}</td></tr>`).join('')
+    const more = rows.length > MORNING_CAP
+      ? `<tr><td></td><td style="padding:2px 8px;color:#aaa;font-size:12px">+${rows.length - MORNING_CAP} more</td><td></td></tr>` : ''
+    return head + more
+  }
+  const focusList = r.focus.slice(0, 3).map(f =>
+    `<div style="font-size:13px;padding:2px 0">• <span style="background:#fde68a;border-radius:4px;padding:1px 6px;font-size:11px;color:#92400e">${esc(f.label)} ${f.age}d</span> ${esc(f.name)} <span style="color:#888">— ${esc(f.asg || 'unassigned')}</span></div>`).join('')
+  const hoursRows = TEAM_ORDER.map(id =>
+    `<tr><td style="padding:2px 10px">${esc(NAMED[id])}</td><td style="padding:2px 10px;text-align:right">${hrs(r.ttToday[id] || 0)}</td><td style="padding:2px 10px;text-align:right;color:#555">${hrs(r.ttWeek[id] || 0)}</td></tr>`).join('')
+
+  const body = `
+  <div style="background:#f6f7fb;border-radius:8px;padding:8px 14px;margin-bottom:16px;font-size:13px"><b>TL;DR</b>&nbsp; ${tldr}</div>
+  <h3 style="margin:14px 0 4px">🎯 Today's focus</h3>
+  ${focusList || '<div style="color:#999;font-size:13px">nothing blocking 🎉</div>'}
+  <h3 style="margin:18px 0 4px">🔧 Active — ${r.active.length}</h3>
+  <table style="border-collapse:collapse;font-size:13px;width:100%">${slim(r.active, 'nothing in progress')}</table>
+  <h3 style="margin:18px 0 4px;color:#b45309">⚠ Stalling — ${r.stale.length}</h3>
+  <table style="border-collapse:collapse;font-size:13px;width:100%">${slim(r.stale, 'none 🎉')}</table>
+  <h3 style="margin:18px 0 4px;color:#b91c1c">⛔ Waiting in QA/deploy gate — ${r.hung.length}</h3>
+  <table style="border-collapse:collapse;font-size:13px;width:100%">${slim(r.hung, 'none 🎉')}</table>
+  <h3 style="margin:18px 0 4px">👥 Hours <span style="font-weight:400;font-size:12px;color:#999">(today / week-to-date)</span></h3>
+  <table style="border-collapse:collapse;font-size:13px"><tr style="color:#888"><td style="padding:2px 10px">Member</td><td style="padding:2px 10px;text-align:right">Today</td><td style="padding:2px 10px;text-align:right">Week</td></tr>${hoursRows}</table>`
   const html = shell("MedMart Dev Sprint — Morning · What's Active", dateStr, timeStr, body)
 
   const lines: string[] = []
+  const slimText = (rows: Row[]) => {
+    rows.slice(0, MORNING_CAP).forEach(x => lines.push(`  ${x.age}d  ${x.name} — ${x.asg || 'unassigned'}`))
+    if (rows.length > MORNING_CAP) lines.push(`  +${rows.length - MORNING_CAP} more`)
+  }
   lines.push(`MEDMART DEV SPRINT — Morning: What's Active — ${dateStr}, ${timeStr} ET`)
-  lines.push(statusText(r)); lines.push(`scope: ${scopeText(r)}`)
-  lines.push(`\n🔧 ACTIVE — being worked on: ${r.active.length}`)
-  r.active.slice(0, 20).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
-  lines.push(`\n⚠ STALLING (no update ≥${r.STALE_BASE}d): ${r.stale.length}`)
-  r.stale.slice(0, 20).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
-  lines.push(`\n⛔ WAITING in deploy/QA gate: ${r.hung.length}`)
-  r.hung.slice(0, 20).forEach(x => lines.push(`  ${x.age}d [${x.st}|${x.sc}] ${x.name} — ${x.asg || 'unassigned'}`))
+  lines.push(`TL;DR  ${tldr}`)
+  lines.push(`\n🎯 TODAY'S FOCUS`)
+  if (r.focus.length) r.focus.slice(0, 3).forEach(f => lines.push(`  • [${f.label} ${f.age}d] ${f.name} — ${f.asg || 'unassigned'}`))
+  else lines.push('  nothing blocking 🎉')
+  lines.push(`\n🔧 ACTIVE — ${r.active.length}`); if (r.active.length) slimText(r.active); else lines.push('  nothing in progress')
+  lines.push(`\n⚠ STALLING — ${r.stale.length}`); if (r.stale.length) slimText(r.stale); else lines.push('  none 🎉')
+  lines.push(`\n⛔ WAITING in QA/deploy gate — ${r.hung.length}`); if (r.hung.length) slimText(r.hung); else lines.push('  none 🎉')
+  lines.push(`\n👥 HOURS (today / week):`)
+  TEAM_ORDER.forEach(id => lines.push(`  ${NAMED[id]}: ${hrs(r.ttToday[id] || 0)} / ${hrs(r.ttWeek[id] || 0)}`))
   return { subject, html, text: lines.join('\n') }
 }
 
@@ -433,7 +500,8 @@ export default async function handler(request: Request): Promise<Response> {
       return new Response(JSON.stringify({ skipped: `ET hour ${h} is not a send window` }), { headers: { 'Content-Type': 'application/json' } })
     }
     const items = await fetchItems()
-    const report = buildReport(items, now, forcedAM)
+    const subSessions = await fetchSubitemSessions().catch(() => [] as TTSession[])
+    const report = buildReport(items, now, forcedAM, subSessions)
     // The 6 PM wrap-up gets the per-member section. Status changes come from the
     // Dev Sprint board activity log (report window); commit counts from GitHub
     // (since midnight ET = "that day"). Both best-effort: never fail the report.
