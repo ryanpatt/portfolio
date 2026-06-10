@@ -206,8 +206,10 @@ export default function EmailsPage() {
         limit: String(PAGE_SIZE),
         offset: String(page * PAGE_SIZE),
       }
-      if (dateFrom) params.from = dateFrom
-      if (dateTo) params.to = dateTo
+      // Send full-day bounds: the API reads a bare YYYY-MM-DD as midnight at
+      // the START of that day, which silently excluded everything sent today.
+      if (dateFrom) params.from = `${dateFrom}T00:00:00Z`
+      if (dateTo) params.to = `${dateTo}T23:59:59Z`
       // eventtype filtering is done client-side (API uses undocumented numeric enums)
 
       const data: EmailLog[] = await apiFetch(params)
@@ -225,7 +227,7 @@ export default function EmailsPage() {
 
   const loadStats = useCallback(async () => {
     try {
-      const data = await apiFetch({ action: 'stats', from: dateFrom, to: dateTo })
+      const data = await apiFetch({ action: 'stats', from: `${dateFrom}T00:00:00Z`, to: `${dateTo}T23:59:59Z` })
       setStats(data)
     } catch { /* non-critical */ }
   }, [dateFrom, dateTo, apiFetch])
