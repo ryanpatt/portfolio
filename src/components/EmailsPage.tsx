@@ -37,11 +37,27 @@ type SortKey = 'EventDate' | 'To' | 'Subject' | 'EventType'
 type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE = 50
+const FETCH_CHUNK = 200
+const MAX_EVENTS = 4000
 
 const ALL_EVENT_TYPES = [
-  'All', 'Sent', 'Delivered', 'Open', 'Click',
-  'Bounce', 'Complaint', 'Unsubscribe', 'Submission',
+  'All', 'Submission', 'Sent', 'Open', 'Click',
+  'Bounce', 'FailedAttempt', 'NotDelivered', 'Complaint', 'Unsubscribe',
 ]
+
+// ElasticEmail sometimes returns numeric enum values instead of names
+// (observed: 30 for NotDelivered events).
+const NUMERIC_EVENT_TYPES: Record<number, string> = { 30: 'NotDelivered' }
+
+function normalizeEventType(raw: unknown, category?: string): string {
+  if (typeof raw === 'string') return raw
+  if (typeof raw === 'number') {
+    if (NUMERIC_EVENT_TYPES[raw]) return NUMERIC_EVENT_TYPES[raw]
+    if (category && category !== 'Unknown') return category
+    return `Event ${raw}`
+  }
+  return 'Unknown'
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -55,6 +71,8 @@ function statusColor(type: string) {
     case 'Unsubscribe':  return 'bg-orange-900/50 text-orange-300 border border-orange-700/40'
     case 'Sent':         return 'bg-emerald-900/30 text-emerald-400 border border-emerald-700/30'
     case 'Submission':   return 'bg-yellow-900/50 text-yellow-300 border border-yellow-700/40'
+    case 'FailedAttempt': return 'bg-amber-900/50 text-amber-300 border border-amber-700/40'
+    case 'NotDelivered': return 'bg-rose-900/50 text-rose-300 border border-rose-700/40'
     default:             return 'bg-surface text-muted border border-border-subtle'
   }
 }
@@ -69,6 +87,8 @@ function statusDot(type: string) {
     case 'Unsubscribe':  return 'bg-orange-400'
     case 'Sent':         return 'bg-emerald-500'
     case 'Submission':   return 'bg-yellow-400 animate-pulse'
+    case 'FailedAttempt': return 'bg-amber-400'
+    case 'NotDelivered': return 'bg-rose-400'
     default:             return 'bg-gray-400'
   }
 }
@@ -157,14 +177,12 @@ export default function EmailsPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [total, setTotal] = useState(0)
 
-  // Filters — eventtype is client-side; date range triggers API refetch
+  // Filters — date range triggers API refetch; eventtype filters client-side
+  // (the ElasticEmail /events endpoint ignores its eventtype param, verified live)
   const [filterEventType, setFilterEventType] = useState('All')
   const [dateFrom, setDateFrom] = useState(() => isoDate(new Date(Date.now() - 7 * 86400000)))
   const [dateTo, setDateTo] = useState(() => isoDate(new Date()))
-  const [pendingDateFrom, setPendingDateFrom] = useState(() => isoDate(new Date(Date.now() - 7 * 86400000)))
-  const [pendingDateTo, setPendingDateTo] = useState(() => isoDate(new Date()))
 
   // Table state
   const [page, setPage] = useState(0)
@@ -201,29 +219,37 @@ export default function EmailsPage() {
     setLoading(true)
     setError('')
     try {
-      const params: Record<string, string> = {
-        action: 'emails',
-        limit: String(PAGE_SIZE),
-        offset: String(page * PAGE_SIZE),
-      }
-      // Send full-day bounds: the API reads a bare YYYY-MM-DD as midnight at
-      // the START of that day, which silently excluded everything sent today.
-      if (dateFrom) params.from = `${dateFrom}T00:00:00Z`
-      if (dateTo) params.to = `${dateTo}T23:59:59Z`
-      // eventtype filtering is done client-side (API uses undocumented numeric enums)
+      // Fetch the full date range in chunks so client-side event-type
+      // filtering, sorting, and pagination see every event — filtering only
+      // the visible server page made e.g. "Bounce" come up empty whenever no
+      // bounce happened to be among the 50 newest events.
+      const all: EmailLog[] = []
+      for (let offset = 0; offset < MAX_EVENTS; offset += FETCH_CHUNK) {
+        const params: Record<string, string> = {
+          action: 'emails',
+          limit: String(FETCH_CHUNK),
+          offset: String(offset),
+        }
+        // Send full-day bounds: the API reads a bare YYYY-MM-DD as midnight at
+        // the START of that day, which silently excluded everything sent today.
+        if (dateFrom) params.from = `${dateFrom}T00:00:00Z`
+        if (dateTo) params.to = `${dateTo}T23:59:59Z`
 
-      const data: EmailLog[] = await apiFetch(params)
-      setEmails(Array.isArray(data) ? data : [])
-      if (Array.isArray(data)) {
-        if (data.length === PAGE_SIZE) setTotal((page + 2) * PAGE_SIZE)
-        else setTotal(page * PAGE_SIZE + data.length)
+        const data: EmailLog[] = await apiFetch(params)
+        if (!Array.isArray(data) || data.length === 0) break
+        all.push(...data.map(e => ({
+          ...e,
+          EventType: normalizeEventType(e.EventType, e.MessageCategory),
+        })))
+        if (data.length < FETCH_CHUNK) break
       }
+      setEmails(all)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load emails')
     } finally {
       setLoading(false)
     }
-  }, [page, dateFrom, dateTo, apiFetch])
+  }, [dateFrom, dateTo, apiFetch])
 
   const loadStats = useCallback(async () => {
     try {
@@ -283,6 +309,11 @@ export default function EmailsPage() {
       ? String(av).localeCompare(String(bv))
       : String(bv).localeCompare(String(av))
   })
+
+  // Pagination is client-side over the filtered list
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const safePage = Math.min(page, pageCount - 1)
+  const pageRows = sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
 
   // ── Email preview ─────────────────────────────────────────────────────────────
 
@@ -380,8 +411,8 @@ export default function EmailsPage() {
               <label className="text-muted text-xs">From date</label>
               <input
                 type="date"
-                value={pendingDateFrom}
-                onChange={e => setPendingDateFrom(e.target.value)}
+                value={dateFrom}
+                onChange={e => { setDateFrom(e.target.value); setPage(0) }}
                 className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-gold/50"
               />
             </div>
@@ -389,26 +420,18 @@ export default function EmailsPage() {
               <label className="text-muted text-xs">To date</label>
               <input
                 type="date"
-                value={pendingDateTo}
-                onChange={e => setPendingDateTo(e.target.value)}
+                value={dateTo}
+                onChange={e => { setDateTo(e.target.value); setPage(0) }}
                 className="bg-surface border border-border-subtle rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-gold/50"
               />
             </div>
             {/* Actions */}
             <div className="flex gap-2 items-end flex-wrap">
               <button
-                onClick={() => { setDateFrom(pendingDateFrom); setDateTo(pendingDateTo); setPage(0) }}
-                className="bg-gold hover:bg-gold-dark text-bg font-semibold text-sm px-4 py-2 rounded-lg transition-colors"
-              >
-                Apply
-              </button>
-              <button
                 onClick={() => {
-                  const df = isoDate(new Date(Date.now() - 7 * 86400000))
-                  const dt = isoDate(new Date())
                   setFilterEventType('All')
-                  setDateFrom(df); setDateTo(dt)
-                  setPendingDateFrom(df); setPendingDateTo(dt)
+                  setDateFrom(isoDate(new Date(Date.now() - 7 * 86400000)))
+                  setDateTo(isoDate(new Date()))
                   setPage(0)
                 }}
                 className="bg-surface hover:bg-card-hover border border-border-subtle text-muted hover:text-ink text-sm px-4 py-2 rounded-lg transition-colors"
@@ -416,8 +439,8 @@ export default function EmailsPage() {
                 Reset
               </button>
               <button
-                onClick={() => exportCsv(emails)}
-                disabled={emails.length === 0}
+                onClick={() => exportCsv(sorted)}
+                disabled={sorted.length === 0}
                 className="bg-surface hover:bg-card-hover border border-border-subtle text-muted hover:text-ink text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
               >
                 ↓ CSV
@@ -460,16 +483,19 @@ export default function EmailsPage() {
             </div>
           )}
 
-          {/* Empty state */}
-          {!loading && emails.length === 0 && !error && (
+          {/* Empty state — based on the filtered list, so e.g. "Bounce" with
+              no matches shows a message instead of a silently blank table */}
+          {!loading && sorted.length === 0 && !error && (
             <div className="py-16 text-center text-muted text-sm">
               No events found for the selected filters.
             </div>
           )}
 
           {/* Rows */}
-          {sorted.map(email => {
-            const rowKey = email.TransactionID || email.MsgID
+          {pageRows.map(email => {
+            // One message produces several events sharing TransactionID/MsgID
+            // (Submission + Sent + Open...), so the key needs the event itself
+            const rowKey = `${email.TransactionID || email.MsgID}-${email.EventType}-${email.EventDate}`
             const isExpanded = expanded === rowKey
             return (
               <div key={rowKey} className="border-b border-border-subtle last:border-0">
@@ -577,24 +603,25 @@ export default function EmailsPage() {
         </div>
 
         {/* ── Pagination ── */}
-        {(total > 0 || emails.length > 0) && (
+        {sorted.length > 0 && (
           <div className="flex items-center justify-between text-sm text-muted">
             <span>
-              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of ~{total} events
+              Showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, sorted.length)} of {sorted.length} events
+              {filterEventType !== 'All' && <span className="ml-1">({emails.length} total)</span>}
               {loading && <span className="ml-2 text-gold text-xs">Loading...</span>}
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0 || loading}
+                disabled={safePage === 0 || loading}
                 className="px-3 py-1.5 bg-card border border-border-subtle rounded-lg hover:bg-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-ink text-xs"
               >
                 ← Prev
               </button>
-              <span className="text-xs px-2">Page {page + 1}</span>
+              <span className="text-xs px-2">Page {safePage + 1} of {pageCount}</span>
               <button
-                onClick={() => setPage(p => p + 1)}
-                disabled={emails.length < PAGE_SIZE || loading}
+                onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))}
+                disabled={safePage >= pageCount - 1 || loading}
                 className="px-3 py-1.5 bg-card border border-border-subtle rounded-lg hover:bg-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-ink text-xs"
               >
                 Next →
